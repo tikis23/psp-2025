@@ -1,0 +1,1266 @@
+openapi: 3.0.4
+info:
+  title: Business Management API
+  description: |-
+    API for managing businesses, owners, and employees in a SaaS platform for catering and beauty businesses.
+  version: 1.0.0
+
+servers:
+  - url: https://example.com/v1
+    description: Production server
+
+tags:
+  - name: business
+    description: Business management operations
+  - name: owner
+    description: Owner management operations
+  - name: employee
+    description: Employee management operations
+
+paths:
+  /businesses:
+    get:
+      tags:
+        - business
+      summary: Get all businesses
+      description: Retrieve a list of all businesses. SuperAdmin can see all, owners can see only their businesses.
+      operationId: getAllBusinesses
+      parameters:
+        - name: type
+          in: query
+          description: Filter by business type
+          required: false
+          schema:
+            type: string
+            enum:
+              - cater
+              - beauty
+        - name: status
+          in: query
+          description: Filter by business status
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - cancelled
+              - onboarded
+              - active
+              - suspended
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Business'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    post:
+      tags:
+        - business
+      summary: Create a new business
+      description: Create a new business. Only owners and superadmins can create businesses.
+      operationId: createBusiness
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCreate'
+      responses:
+        '201':
+          description: Business created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /businesses/{businessId}:
+    get:
+      tags:
+        - business
+      summary: Get business by ID
+      description: Retrieve a specific business by its ID
+      operationId: getBusinessById
+      parameters:
+        - name: businessId
+          in: path
+          description: ID of business to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Business not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    put:
+      tags:
+        - business
+      summary: Update an existing business
+      description: Update business details. Only business owner and superadmin can update.
+      operationId: updateBusiness
+      parameters:
+        - name: businessId
+          in: path
+          description: ID of business to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessUpdate'
+      responses:
+        '200':
+          description: Business updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Business not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - business
+      summary: Delete a business
+      description: Delete a business. Only superadmin can delete businesses.
+      operationId: deleteBusiness
+      parameters:
+        - name: businessId
+          in: path
+          description: ID of business to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Business deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Business not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /owners:
+    get:
+      tags:
+        - owner
+      summary: Get all owners
+      description: Retrieve a list of all owners. Only superadmin can access this endpoint.
+      operationId: getAllOwners
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Owner'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    post:
+      tags:
+        - owner
+      summary: Create a new owner
+      description: Register a new business owner
+      operationId: createOwner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerCreate'
+      responses:
+        '201':
+          description: Owner created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /owners/{ownerId}:
+    get:
+      tags:
+        - owner
+      summary: Get owner by ID
+      description: Retrieve a specific owner by their ID
+      operationId: getOwnerById
+      parameters:
+        - name: ownerId
+          in: path
+          description: ID of owner to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    put:
+      tags:
+        - owner
+      summary: Update an existing owner
+      description: Update owner details. Owners can update their own information, superadmin can update any owner.
+      operationId: updateOwner
+      parameters:
+        - name: ownerId
+          in: path
+          description: ID of owner to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerUpdate'
+      responses:
+        '200':
+          description: Owner updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - owner
+      summary: Delete an owner
+      description: Delete an owner. Only superadmin can delete owners.
+      operationId: deleteOwner
+      parameters:
+        - name: ownerId
+          in: path
+          description: ID of owner to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Owner deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Owner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /employees:
+    get:
+      tags:
+        - employee
+      summary: Get all employees
+      description: Retrieve a list of employees. Business owners see only their employees, superadmin sees all.
+      operationId: getAllEmployees
+      parameters:
+        - name: businessId
+          in: query
+          description: Filter by business ID
+          schema:
+            type: integer
+            format: int64
+        - name: role
+          in: query
+          description: Filter by employee role
+          schema:
+            type: string
+            enum:
+              - employee
+              - support
+              - owner
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Employee'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    post:
+      tags:
+        - employee
+      summary: Create a new employee
+      description: Create a new employee. Only business owners can create employees for their business, superadmin can create for any business.
+      operationId: createEmployee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '201':
+          description: Employee created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /employees/{employeeId}:
+    get:
+      tags:
+        - employee
+      summary: Get employee by ID
+      description: Retrieve a specific employee by their ID
+      operationId: getEmployeeById
+      parameters:
+        - name: employeeId
+          in: path
+          description: ID of employee to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    put:
+      tags:
+        - employee
+      summary: Update an existing employee
+      description: Update employee details. Only business owner can update their employees, superadmin can update any employee.
+      operationId: updateEmployee
+      parameters:
+        - name: employeeId
+          in: path
+          description: ID of employee to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+      responses:
+        '200':
+          description: Employee updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - employee
+      summary: Delete an employee
+      description: Delete an employee. Only business owner can delete their employees, superadmin can delete any employee.
+      operationId: deleteEmployee
+      parameters:
+        - name: employeeId
+          in: path
+          description: ID of employee to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Employee deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+
+  /auth/login:
+    post:
+      tags:
+        - employee
+      summary: Employee login
+      description: Authenticate an employee using their employee code and password
+      operationId: employeeLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - employeeCode
+                - password
+              properties:
+                employeeCode:
+                  type: string
+                  example: "EMP001"
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+                  employee:
+                    $ref: '#/components/schemas/Employee'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Business:
+      type: object
+      required:
+        - id
+        - name
+        - ownerId
+        - type
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          description: Unique identifier for the business
+        name:
+          type: string
+          example: "Joe's Coffee Shop"
+          description: Business name
+        description:
+          type: string
+          example: "A cozy coffee shop in downtown"
+          description: Business description
+        ownerId:
+          type: integer
+          format: int64
+          example: 101
+          description: ID of the business owner
+        type:
+          type: string
+          enum:
+            - cater
+            - beauty
+          example: "cater"
+          description: Type of business
+        address:
+          type: string
+          example: "123 Main Street, New York, NY 10001"
+          description: Physical address of the business
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+          description: Contact phone number
+        email:
+          type: string
+          format: email
+          example: "info@joescoffee.com"
+          description: Contact email address
+        status:
+          type: string
+          enum:
+            - pending
+            - cancelled
+            - onboarded
+            - active
+            - suspended
+          example: "active"
+          description: Current business status
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+          description: Timestamp when business was created
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-20T14:45:00Z"
+          description: Timestamp when business was last updated
+
+    BusinessCreate:
+      type: object
+      required:
+        - name
+        - ownerId
+        - type
+        - email
+      properties:
+        name:
+          type: string
+          example: "Joe's Coffee Shop"
+        description:
+          type: string
+          example: "A cozy coffee shop in downtown"
+        ownerId:
+          type: integer
+          format: int64
+          example: 101
+        type:
+          type: string
+          enum:
+            - cater
+            - beauty
+          example: "cater"
+        address:
+          type: string
+          example: "123 Main Street, New York, NY 10001"
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+        email:
+          type: string
+          format: email
+          example: "info@joescoffee.com"
+        status:
+          type: string
+          enum:
+            - pending
+            - cancelled
+            - onboarded
+            - active
+            - suspended
+          default: "pending"
+          example: "pending"
+
+    BusinessUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Joe's Coffee & Bakery"
+        description:
+          type: string
+          example: "A cozy coffee shop and bakery"
+        address:
+          type: string
+          example: "123 Main Street, New York, NY 10001"
+        phoneNumber:
+          type: string
+          example: "+1234567890"
+        email:
+          type: string
+          format: email
+          example: "info@joescoffee.com"
+        status:
+          type: string
+          enum:
+            - pending
+            - cancelled
+            - onboarded
+            - active
+            - suspended
+          example: "active"
+
+    Owner:
+      type: object
+      required:
+        - id
+        - name
+        - lastName
+        - email
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+          description: Unique identifier for the owner
+        name:
+          type: string
+          example: "John"
+          description: Owner's first name
+        lastName:
+          type: string
+          example: "Doe"
+          description: Owner's last name
+        address:
+          type: string
+          example: "456 Oak Avenue, Boston, MA 02101"
+          description: Owner's residential address
+        phoneNumber:
+          type: string
+          example: "+1987654321"
+          description: Owner's contact phone number
+        email:
+          type: string
+          format: email
+          example: "john.doe@email.com"
+          description: Owner's email address
+        personalCode:
+          type: string
+          example: "12345678901"
+          description: Owner's personal identification code (SSN, National ID, etc.)
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-10T09:00:00Z"
+          description: Timestamp when owner was created
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T16:30:00Z"
+          description: Timestamp when owner was last updated
+
+    OwnerCreate:
+      type: object
+      required:
+        - name
+        - lastName
+        - email
+        - personalCode
+      properties:
+        name:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        address:
+          type: string
+          example: "456 Oak Avenue, Boston, MA 02101"
+        phoneNumber:
+          type: string
+          example: "+1987654321"
+        email:
+          type: string
+          format: email
+          example: "john.doe@email.com"
+        personalCode:
+          type: string
+          example: "12345678901"
+
+    OwnerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        address:
+          type: string
+          example: "456 Oak Avenue, Boston, MA 02101"
+        phoneNumber:
+          type: string
+          example: "+1987654321"
+        email:
+          type: string
+          format: email
+          example: "john.doe@email.com"
+
+    Employee:
+      type: object
+      required:
+        - id
+        - businessId
+        - name
+        - lastName
+        - employeeCode
+        - role
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 201
+          description: Unique identifier for the employee
+        businessId:
+          type: integer
+          format: int64
+          example: 1
+          description: ID of the business this employee belongs to
+        name:
+          type: string
+          example: "Jane"
+          description: Employee's first name
+        lastName:
+          type: string
+          example: "Smith"
+          description: Employee's last name
+        employeeCode:
+          type: string
+          example: "EMP001"
+          description: Unique employee code used for login
+        role:
+          type: string
+          enum:
+            - employee
+            - support
+            - owner
+          example: "employee"
+          description: Employee's role in the system
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-12T11:00:00Z"
+          description: Timestamp when employee was created
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-18T13:20:00Z"
+          description: Timestamp when employee was last updated
+
+    EmployeeCreate:
+      type: object
+      required:
+        - businessId
+        - name
+        - lastName
+        - employeeCode
+        - password
+        - role
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Jane"
+        lastName:
+          type: string
+          example: "Smith"
+        employeeCode:
+          type: string
+          example: "EMP001"
+          description: Unique employee code for login
+        password:
+          type: string
+          format: password
+          example: "securePassword123"
+          description: Employee's password for authentication
+        role:
+          type: string
+          enum:
+            - employee
+            - support
+            - owner
+          example: "employee"
+
+    EmployeeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Jane"
+        lastName:
+          type: string
+          example: "Smith"
+        employeeCode:
+          type: string
+          example: "EMP001"
+        password:
+          type: string
+          format: password
+          example: "newSecurePassword456"
+          description: Update employee's password
+        role:
+          type: string
+          enum:
+            - employee
+            - support
+            - owner
+          example: "employee"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+          description: Error code for programmatic handling
+        message:
+          type: string
+          example: "Invalid input provided"
+          description: Human-readable error message
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "email"
+              message:
+                type: string
+                example: "Email format is invalid"
+          description: Additional error details for validation errors
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          example: 20
+          description: Number of items per page
+        totalItems:
+          type: integer
+          example: 150
+          description: Total number of items
+        totalPages:
+          type: integer
+          example: 8
+          description: Total number of pages
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+security:
+  - bearerAuth: []
