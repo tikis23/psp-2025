@@ -1,0 +1,712 @@
+openapi: 3.0.0
+info:
+  title: Items endpoints
+  description: Endpoint specification for items, item variations, and taxes
+  version: 1.0.0
+
+tags:
+  - name: Items
+    description: Operations related to items
+  - name: Item Variations
+    description: Operations related to item variations
+  - name: Taxes
+    description: Operations related to taxes
+
+paths:
+  /items:
+    get:
+      tags: [Items]
+      summary: List all items
+      description: Retrieves items with optional filters
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search by name/description
+        - in: query
+          name: tax_id
+          schema: { type: string }
+        - in: query
+          name: discount_id
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Item" }
+              examples:
+                sample:
+                  value:
+                    items:
+                      - id: "item_123"
+                        name: "Latte"
+                        description: "Freshly brewed milk coffee"
+                        tax_id: "tax_vat_21"
+                        discount_id: null
+                        base_price: 2.5
+                        quantity: 1
+                        created_at: "2025-10-05T14:30:00Z"
+                        updated_at: "2025-10-05T14:30:00Z"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      security:
+        - BearerAuth: []
+    post:
+      tags: [Items]
+      summary: Create a new item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemRequest"
+            examples:
+              createLatte:
+                value:
+                  name: "Latte"
+                  description: "Freshly brewed milk coffee"
+                  tax_id: "tax_vat_21"
+                  discount_id: null
+                  base_price: 2.5
+                  quantity: 1
+      responses:
+        "201":
+          description: Item created successfully
+          headers:
+            Location:
+              description: URL of the created item
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+              example:
+                id: "item_123"
+                name: "Latte"
+                description: "Freshly brewed milk coffee"
+                tax_id: "tax_vat_21"
+                discount_id: null
+                base_price: 2.5
+                quantity: 1
+                created_at: "2025-10-05T14:30:00Z"
+                updated_at: "2025-10-05T14:30:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+
+  /items/{itemId}:
+    get:
+      tags: [Items]
+      summary: Get item details
+      parameters:
+        - $ref: "#/components/parameters/ItemIdParam"
+      responses:
+        "200":
+          description: Item details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/ItemNotFound"
+      security:
+        - BearerAuth: []
+    put:
+      tags: [Items]
+      summary: Replace an item
+      parameters:
+        - $ref: "#/components/parameters/ItemIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ItemRequest" }
+      responses:
+        "200":
+          description: Item updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Item" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/ItemNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    patch:
+      tags: [Items]
+      summary: Partially update an item
+      parameters:
+        - $ref: "#/components/parameters/ItemIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ItemPatch" }
+      responses:
+        "200":
+          description: Item updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Item" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/ItemNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    delete:
+      tags: [Items]
+      summary: Delete an item
+      parameters:
+        - $ref: "#/components/parameters/ItemIdParam"
+      responses:
+        "204":
+          description: Item deleted
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/ItemNotFound"
+      security:
+        - BearerAuth: []
+
+  /item-variations:
+    get:
+      tags: [Item Variations]
+      summary: List item variations
+      parameters:
+        - in: query
+          name: item_id
+          schema: { type: string }
+          description: Filter by parent item ID
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search by name/description 
+      responses:
+        "200":
+          description: List of item variations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item_variations:
+                    type: array
+                    items: { $ref: "#/components/schemas/ItemVariation" }
+      security:
+        - BearerAuth: []
+    post:
+      tags: [Item Variations]
+      summary: Create a new item variation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ItemVariationRequest" }
+            examples:
+              largeLatte:
+                value:
+                  item_id: "item_123"
+                  name: "Large"
+                  description: "Large cup"
+                  price_diff: 0.2
+                  quantity: 1
+      responses:
+        "201":
+          description: Item variation created successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemVariation" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+
+  /item-variations/{variationId}:
+    get:
+      tags: [Item Variations]
+      summary: Get item variation details
+      parameters:
+        - $ref: "#/components/parameters/VariationIdParam"
+      responses:
+        "200":
+          description: Variation details retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemVariation" }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/VariationNotFound"
+      security:
+        - BearerAuth: []
+    put:
+      tags: [Item Variations]
+      summary: Replace an item variation
+      parameters:
+        - $ref: "#/components/parameters/VariationIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ItemVariationRequest" }
+      responses:
+        "200":
+          description: Item variation updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemVariation" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/VariationNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    patch:
+      tags: [Item Variations]
+      summary: Partially update an item variation
+      parameters:
+        - $ref: "#/components/parameters/VariationIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ItemVariationPatch" }
+      responses:
+        "200":
+          description: Item variation updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ItemVariation" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/VariationNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    delete:
+      tags: [Item Variations]
+      summary: Delete an item variation
+      parameters:
+        - $ref: "#/components/parameters/VariationIdParam"
+      responses:
+        "204":
+          description: Item variation deleted
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/VariationNotFound"
+      security:
+        - BearerAuth: []
+
+  /taxes:
+    get:
+      tags: [Taxes]
+      summary: List taxes
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search by name
+      responses:
+        "200":
+          description: List of taxes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taxes:
+                    type: array
+                    items: { $ref: "#/components/schemas/Tax" }
+      security:
+        - BearerAuth: []
+    post:
+      tags: [Taxes]
+      summary: Create a new tax
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaxRequest" }
+            examples:
+              vat21:
+                value:
+                  name: "VAT 21%"
+                  amount: 0.21
+      responses:
+        "201":
+          description: Tax created successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tax" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+
+  /taxes/{taxId}:
+    get:
+      tags: [Taxes]
+      summary: Get tax details
+      parameters:
+        - $ref: "#/components/parameters/TaxIdParam"
+      responses:
+        "200":
+          description: Tax details retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tax" }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/TaxNotFound"
+      security:
+        - BearerAuth: []
+    put:
+      tags: [Taxes]
+      summary: Replace a tax
+      parameters:
+        - $ref: "#/components/parameters/TaxIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaxRequest" }
+      responses:
+        "200":
+          description: Tax updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tax" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/TaxNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    patch:
+      tags: [Taxes]
+      summary: Partially update a tax
+      parameters:
+        - $ref: "#/components/parameters/TaxIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaxPatch" }
+      responses:
+        "200":
+          description: Tax updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tax" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/TaxNotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      security:
+        - BearerAuth: []
+    delete:
+      tags: [Taxes]
+      summary: Delete a tax
+      parameters:
+        - $ref: "#/components/parameters/TaxIdParam"
+      responses:
+        "204":
+          description: Tax deleted
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/TaxNotFound"
+      security:
+        - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+
+  parameters:
+    ItemIdParam:
+      name: itemId
+      in: path
+      required: true
+      description: Unique item identifier
+      schema:
+        type: string
+        example: "item_123"
+    VariationIdParam:
+      name: variationId
+      in: path
+      required: true
+      description: Unique item variation identifier
+      schema:
+        type: string
+        example: "var_123"
+    TaxIdParam:
+      name: taxId
+      in: path
+      required: true
+      description: Unique tax identifier
+      schema:
+        type: string
+        example: "tax_vat_21"
+
+  schemas:
+    Item:
+      type: object
+      properties:
+        id: { type: string, example: "item_123" }
+        name: { type: string, example: "Latte" }
+        description:
+          type: string
+          nullable: true
+          example: "Freshly brewed milk coffee"
+        tax_id:
+          type: string
+          nullable: true
+          example: "tax_vat_21"
+        discount_id:
+          type: string
+          nullable: true
+          example: null
+        base_price:
+          type: number
+          format: double
+          example: 2.5
+          description: Base unit price before variations/discounts/taxes
+        quantity:
+          type: number
+          format: double
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+      required: [id, name, base_price, quantity]
+
+    ItemRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+        tax_id: { type: string, nullable: true }
+        discount_id: { type: string, nullable: true }
+        base_price: { type: number, format: double, minimum: 0 }
+        quantity: { type: number, format: double, minimum: 0 }
+      required: [name, base_price, quantity]
+
+    ItemPatch:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+        tax_id: { type: string, nullable: true }
+        discount_id: { type: string, nullable: true }
+        base_price: { type: number, format: double, minimum: 0 }
+        quantity: { type: number, format: double, minimum: 0 }
+
+    ItemVariation:
+      type: object
+      properties:
+        id: { type: string, example: "var_123" }
+        item_id: { type: string, example: "item_123" }
+        name: { type: string, example: "Large" }
+        description:
+          type: string
+          nullable: true
+          example: "Large cup"
+        price_diff:
+          type: number
+          format: double
+          example: 0.2
+          description: 
+        quantity:
+          type: number
+          format: double
+          example: 1
+        effective_price:
+          type: number
+          format: double
+          readOnly: true
+          example: 2.7
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+      required: [id, item_id, name, price_diff, quantity]
+
+    ItemVariationRequest:
+      type: object
+      properties:
+        item_id: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        price_diff: { type: number, format: double }
+        quantity: { type: number, format: double, minimum: 0 }
+      required: [item_id, name, price_diff, quantity]
+
+    ItemVariationPatch:
+      type: object
+      properties:
+        item_id: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        price_diff: { type: number, format: double }
+        quantity: { type: number, format: double, minimum: 0 }
+
+    Tax:
+      type: object
+      properties:
+        id: { type: string, example: "tax_vat_21" }
+        name: { type: string, example: "VAT 21%" }
+        amount:
+          type: number
+          format: double
+          example: 0.21
+          description: Tax rate (0.21 = 21%).
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+      required: [id, name, amount]
+
+    TaxRequest:
+      type: object
+      properties:
+        name: { type: string }
+        amount: { type: number, format: double }
+      required: [name, amount]
+
+    TaxPatch:
+      type: object
+      properties:
+        name: { type: string }
+        amount: { type: number, format: double }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Resource not found"
+        code:
+          type: string
+          example: "NOT_FOUND"
+        details:
+          type: object
+          nullable: true
+      required: [error, code]
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Invalid field value"
+            code: "BAD_REQUEST"
+    UnauthorizedError:
+      description: Unauthorized - invalid or missing authentication token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Invalid or expired authentication token"
+            code: "UNAUTHORIZED"
+    UnprocessableEntity:
+      description: Unprocessable entity - business logic error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Tax amount must be between 0 and 1"
+            code: "VALIDATION_ERROR"
+
+    ItemNotFound:
+      description: Item not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Item not found"
+            code: "ITEM_NOT_FOUND"
+    VariationNotFound:
+      description: Item variation not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Item variation not found"
+            code: "VARIATION_NOT_FOUND"
+    TaxNotFound:
+      description: Tax not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            error: "Tax not found"
+            code: "TAX_NOT_FOUND"
