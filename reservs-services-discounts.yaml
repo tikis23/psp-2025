@@ -1,0 +1,779 @@
+openapi: 3.0.3
+info:
+  title: Reservation and POS API
+  description: |-
+    This API provides endpoints to manage customer reservations, business services (e.g., for salons),
+    and discounts for a Point of Sale system.
+    Access to management endpoints (creating, updating, or deleting items) is restricted
+    to authenticated employees with the proper permissions.
+  version: 1.0.3
+servers:
+  - url: https://api.reservationsystem.com/v1
+tags:
+  - name: Reservations
+    description: Operations related to customer reservations. (Public)
+  - name: Services (Salons)
+    description: Operations for managing business services (e.g., haircuts, manicures).
+  - name: Discounts
+    description: Operations for managing available discounts and promotions.
+
+paths:
+  /availability:
+    get:
+      tags:
+        - Reservations
+      summary: Find Available Reservation Times
+      description: |-
+        Retrieves a list of available time slots for a specific service and date range.
+        This is the first step for a customer looking to make a new reservation or reschedule an existing one.
+      operationId: getAvailability
+      parameters:
+        - name: serviceId
+          in: query
+          required: true
+          description: The ID of the service for which to check availability.
+          schema:
+            type: string
+            example: "svc_1a2b3c"
+        - name: employeeId
+          in: query
+          required: false
+          description: Optionally filter availability for a specific employee.
+          schema:
+            type: string
+            example: "emp_4d5e6f"
+        - name: startDate
+          in: query
+          required: true
+          description: The start of the date range to check for availability (ISO 8601 format).
+          schema:
+            type: string
+            format: date-time
+            example: "2024-10-20T09:00:00Z"
+        - name: endDate
+          in: query
+          required: true
+          description: The end of the date range to check for availability (ISO 8601 format).
+          schema:
+            type: string
+            format: date-time
+            example: "2024-10-25T17:00:00Z"
+      responses:
+        "200":
+          description: A list of available time slots.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableSlot"
+        "400":
+          description: Bad request, such as missing required parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /reservations:
+    post:
+      tags:
+        - Reservations
+      summary: Create a New Reservation
+      description: Creates a new reservation for a customer after an available time slot has been chosen.
+      operationId: createReservation
+      requestBody:
+        description: Reservation details for the new booking.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewReservation"
+      responses:
+        "201":
+          description: The reservation was created successfully. The response body contains the full details of the created reservation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          description: Invalid input, such as a time slot that is no longer available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Conflict. The requested time slot is no longer available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /reservations/{reservationId}:
+    get:
+      tags:
+        - Reservations
+      summary: Get Reservation Details
+      description: Retrieves the complete details of a single reservation by its ID.
+      operationId: getReservationById
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The unique identifier of the reservation.
+          schema:
+            type: string
+            format: uuid
+            example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      responses:
+        "200":
+          description: Successful retrieval of reservation details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: A reservation with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /reservations/{reservationId}/reschedule:
+    put:
+      tags:
+        - Reservations
+      summary: Reschedule an Existing Reservation
+      description: Allows changing the time of an existing reservation to a new, available time slot.
+      operationId: rescheduleReservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The unique identifier of the reservation to be rescheduled.
+          schema:
+            type: string
+            format: uuid
+            example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      requestBody:
+        description: The new date and time for the reservation.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleRequest"
+      responses:
+        "200":
+          description: The reservation was successfully rescheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: A reservation with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The new requested time slot is not available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /reservations/{reservationId}/cancel:
+    post:
+      tags:
+        - Reservations
+      summary: Cancel a Reservation
+      description: Cancels an active reservation. This is a final action and cannot be undone.
+      operationId: cancelReservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The unique identifier of the reservation to be cancelled.
+          schema:
+            type: string
+            format: uuid
+            example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      responses:
+        "200":
+          description: The reservation was successfully cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: A reservation with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The reservation is already cancelled or completed and cannot be cancelled again.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /services:
+    get:
+      tags:
+        - Services (Salons)
+      summary: List All Services
+      description: Retrieves a list of all services offered, typically for salons.
+      operationId: listServices
+      parameters:
+        - name: isActive
+          in: query
+          required: false
+          description: Filter by active status. Defaults to true.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: A list of services.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      tags:
+        - Services (Salons)
+      summary: Create a New Service
+      description: Adds a new service. Requires authenticated employee credentials.
+      operationId: createService
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: The details of the service to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewService"
+      responses:
+        "201":
+          description: Service created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          description: Invalid input for the service.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+
+  /services/{serviceId}:
+    get:
+      tags:
+        - Services (Salons)
+      summary: Get Service Details
+      description: Retrieves the details of a specific service by its ID.
+      operationId: getServiceById
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: The unique identifier of the service.
+          schema:
+            type: string
+            example: "svc_1a2b3c"
+      responses:
+        "200":
+          description: Service details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Service not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+        - Services (Salons)
+      summary: Update a Service
+      description: Updates an existing service. Requires authenticated employee credentials.
+      operationId: updateService
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: The unique identifier of the service.
+          schema:
+            type: string
+            example: "svc_1a2b3c"
+      requestBody:
+        description: The updated details of the service.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewService"
+      responses:
+        "200":
+          description: Service updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          description: Invalid input for the service.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+        "404":
+          description: Service not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      tags:
+        - Services (Salons)
+      summary: Archive a Service (Soft Delete)
+      description: |-
+        Archives a service by setting its `isActive` flag to `false`.
+        Requires authenticated employee credentials.
+      operationId: deleteService
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: The unique identifier of the service to archive.
+          schema:
+            type: string
+            example: "svc_1a2b3c"
+      responses:
+        "200":
+          description: Service archived successfully. Returns the service in its new archived state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+        "404":
+          description: Service not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /discounts:
+    get:
+      tags:
+        - Discounts
+      summary: List All Discounts
+      description: Retrieves a list of all available discounts. Requires authentication.
+      operationId: listDiscounts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: isActive
+          in: query
+          required: false
+          description: Filter by active status. Defaults to true.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: A list of discounts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Discount"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+    post:
+      tags:
+        - Discounts
+      summary: Create a New Discount
+      description: Adds a new discount to the system. Requires authenticated employee credentials.
+      operationId: createDiscount
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: The details of the discount to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewDiscount"
+      responses:
+        "201":
+          description: Discount created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "400":
+          description: Invalid input for the discount.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+
+  /discounts/{discountId}:
+    get:
+      tags:
+        - Discounts
+      summary: Get Discount Details
+      description: Retrieves the details of a specific discount by its ID. Requires authentication.
+      operationId: getDiscountById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          description: The unique identifier of the discount.
+          schema:
+            type: string
+            example: "dsc_456"
+      responses:
+        "200":
+          description: Discount details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "404":
+          description: Discount not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      tags:
+        - Discounts
+      summary: Update a Discount
+      description: Updates the details of an existing discount. Requires authenticated employee credentials.
+      operationId: updateDiscount
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          description: The unique identifier of the discount.
+          schema:
+            type: string
+            example: "dsc_456"
+      requestBody:
+        description: The updated details of the discount.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewDiscount"
+      responses:
+        "200":
+          description: Discount updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "400":
+          description: Invalid input for the discount.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+        "404":
+          description: Discount not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      tags:
+        - Discounts
+      summary: Deactivate a Discount (Soft Delete)
+      description: |-
+        Deactivates a discount by setting its `isActive` flag to `false`.
+        Requires authenticated employee credentials.
+      operationId: deleteDiscount
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          description: The unique identifier of the discount to deactivate.
+          schema:
+            type: string
+            example: "dsc_456"
+      responses:
+        "200":
+          description: Discount deactivated successfully. Returns the discount in its new inactive state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "401":
+          description: Unauthorized. Invalid or missing authentication token.
+        "403":
+          description: Forbidden. The authenticated employee does not have permission.
+        "404":
+          description: Discount not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        A JWT token obtained from the authentication service after employee login.
+        The token contains the employee's ID and role (e.g., 'cashier', 'manager').
+
+  schemas:
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier for the reservation.
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        customerName:
+          type: string
+          example: "Jane Doe"
+        customerPhone:
+          type: string
+          example: "+15551234567"
+        serviceId:
+          type: string
+          example: "svc_1a2b3c"
+        employeeId:
+          type: string
+          example: "emp_4d5e6f"
+        reservationDate:
+          type: string
+          format: date-time
+          example: "2024-10-21T14:00:00Z"
+        status:
+          type: string
+          enum: [confirmed, cancelled, completed]
+          example: "confirmed"
+
+    NewReservation:
+      type: object
+      required:
+        - customerName
+        - customerPhone
+        - serviceId
+        - employeeId
+        - reservationDate
+      properties:
+        customerName:
+          type: string
+          description: The customer's full name.
+          example: "John Smith"
+        customerPhone:
+          type: string
+          description: The customer's phone number, used for sending SMS notifications.
+          example: "+15557654321"
+        serviceId:
+          type: string
+          description: The ID of the service being booked.
+          example: "svc_1a2b3c"
+        employeeId:
+          type: string
+          description: The ID of the employee requested for the service.
+          example: "emp_4d5e6f"
+        reservationDate:
+          type: string
+          format: date-time
+          description: The chosen date and time for the reservation.
+          example: "2024-10-21T14:00:00Z"
+
+    AvailableSlot:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-10-21T14:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-10-21T15:00:00Z"
+        employeeId:
+          type: string
+          example: "emp_4d5e6f"
+
+    RescheduleRequest:
+      type: object
+      required:
+        - newReservationDate
+      properties:
+        newReservationDate:
+          type: string
+          format: date-time
+          description: The new requested date and time for the reservation.
+          example: "2024-10-22T10:00:00Z"
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the service.
+          example: "svc_1a2b3c"
+        name:
+          type: string
+          example: "Men's Haircut"
+        description:
+          type: string
+          example: "Standard men's haircut and style."
+        price:
+          type: number
+          format: double
+          example: 30.50
+        taxId:
+          type: string
+          description: The ID of the applicable tax rate.
+          example: "tax_123"
+        employeeId:
+          type: string
+          description: The ID of the employee associated with this service.
+          example: "emp_4d5e6f"
+        isActive:
+          type: boolean
+          description: Whether the service is active and available for booking/sale.
+          example: true
+
+    NewService:
+      type: object
+      required:
+        - name
+        - price
+        - employeeId
+      properties:
+        name:
+          type: string
+          example: "Deluxe Manicure"
+        description:
+          type: string
+          example: "Includes nail shaping, cuticle care, massage, and polish."
+        price:
+          type: number
+          format: double
+          example: 45.00
+        taxId:
+          type: string
+          description: The ID of the applicable tax rate.
+          example: "tax_123"
+        employeeId:
+          type: string
+          description: The ID of an employee that can perform this service.
+          example: "emp_4d5e6f"
+
+    Discount:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the discount.
+          example: "dsc_456"
+        name:
+          type: string
+          example: "Holiday Special"
+        amount:
+          type: number
+          format: double
+          description: "The value of the discount. Can be a fixed amount or a percentage."
+          example: 10.00
+        expiryDate:
+          type: string
+          format: date-time
+          description: The date and time when the discount expires.
+          example: "2024-12-31T23:59:59Z"
+        isActive:
+          type: boolean
+          description: Whether the discount is active and available for use.
+          example: true
+        requiredRole:
+          type: string
+          description: The minimum employee role required to apply this discount (e.g., 'cashier', 'manager'). If null, any employee can apply it.
+          enum: [cashier, manager, admin]
+          nullable: true
+          example: "manager"
+
+    NewDiscount:
+      type: object
+      required:
+        - name
+        - amount
+      properties:
+        name:
+          type: string
+          example: "Student Discount"
+        amount:
+          type: number
+          format: double
+          description: "The value of the discount. Can be a fixed amount or a percentage."
+          example: 15.00
+        expiryDate:
+          type: string
+          format: date-time
+          description: The date and time when the discount expires.
+          example: "2025-05-31T23:59:59Z"
+        requiredRole:
+          type: string
+          description: The minimum employee role required to create and apply this discount.
+          enum: [cashier, manager, admin]
+          nullable: true
+          example: "cashier"
+
+    ApiError:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "The requested resource was not found."
