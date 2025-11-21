@@ -41,7 +41,7 @@ public class SecurityConfig {
             // Configure CSRF to use cookie-based token; ignore login/logout/register for simplicity
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register")
+                .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/orders/**")
             )
             // Session-based (cookie) authentication
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -54,6 +54,7 @@ public class SecurityConfig {
                 // Example URL-based role restrictions (adjust as you add endpoints)
                 .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
+                .requestMatchers("/orders/**").permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )
