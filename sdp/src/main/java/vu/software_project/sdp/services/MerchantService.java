@@ -19,12 +19,13 @@ public class MerchantService {
     }
 
     @Transactional
-    public MerchantResponseDTO createMerchant(MerchantCreateRequestDTO request, Long ownerId) {
+    public MerchantResponseDTO createMerchant(MerchantCreateRequestDTO request) {
         Merchant merchant = new Merchant();
         merchant.setName(request.getName());
         merchant.setAddress(request.getAddress());
         merchant.setContactInfo(request.getContactInfo());
-        merchant.setOwnerId(ownerId);
+        // TODO: Julius will provide how to get current user ID
+        merchant.setOwnerId(1L);
 
         Merchant saved = merchantRepository.save(merchant);
         return toResponseDTO(saved);
@@ -46,13 +47,9 @@ public class MerchantService {
     }
 
     @Transactional
-    public MerchantResponseDTO updateMerchant(Long id, MerchantUpdateRequestDTO request, Long currentUserId) {
+    public MerchantResponseDTO updateMerchant(Long id, MerchantUpdateRequestDTO request) {
         Merchant merchant = merchantRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
-
-        if (!merchant.getOwnerId().equals(currentUserId)) {
-            throw new IllegalArgumentException("Only owner can update merchant");
-        }
 
         merchant.setName(request.getName());
         merchant.setAddress(request.getAddress());
@@ -63,14 +60,10 @@ public class MerchantService {
     }
 
     @Transactional
-    public void deleteMerchant(Long id, Long currentUserId) {
-        Merchant merchant = merchantRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
-
-        if (!merchant.getOwnerId().equals(currentUserId)) {
-            throw new IllegalArgumentException("Only owner can delete merchant");
+    public void deleteMerchant(Long id) {
+        if (!merchantRepository.existsById(id)) {
+            throw new IllegalArgumentException("Merchant not found");
         }
-
         merchantRepository.deleteById(id);
     }
 

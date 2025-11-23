@@ -1,19 +1,17 @@
 package vu.software_project.sdp.services;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vu.software_project.sdp.DTOs.item.ItemCreateRequestDTO;
 import vu.software_project.sdp.DTOs.item.ItemResponseDTO;
 import vu.software_project.sdp.DTOs.item.ItemUpdateRequestDTO;
 import vu.software_project.sdp.entities.ServiceItem;
 import vu.software_project.sdp.repositories.ServiceItemRepository;
-
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ServiceItemService {
-
     private final ServiceItemRepository serviceItemRepository;
 
     public ServiceItemService(ServiceItemRepository serviceItemRepository) {
@@ -21,7 +19,7 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public ItemResponseDTO createService(ItemCreateRequestDTO request, Long merchantId) {
+    public ItemResponseDTO createServiceItem(ItemCreateRequestDTO request, Long merchantId) {
         ServiceItem serviceItem = new ServiceItem();
         serviceItem.setName(request.getName());
         serviceItem.setPrice(request.getPrice());
@@ -33,24 +31,24 @@ public class ServiceItemService {
     }
 
     @Transactional(readOnly = true)
-    public ItemResponseDTO getServiceById(Long id) {
+    public ItemResponseDTO getServiceItemById(Long id) {
         ServiceItem serviceItem = serviceItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
+            .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
         return toResponseDTO(serviceItem);
     }
 
     @Transactional(readOnly = true)
-    public List<ItemResponseDTO> getServicesByMerchant(Long merchantId) {
+    public List<ItemResponseDTO> getServiceItemsByMerchant(Long merchantId) {
         return serviceItemRepository.findByMerchantId(merchantId)
-                .stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+            .stream()
+            .map(this::toResponseDTO)
+            .collect(Collectors.toList());
     }
 
     @Transactional
-    public ItemResponseDTO updateService(Long id, ItemUpdateRequestDTO request) {
+    public ItemResponseDTO updateServiceItem(Long id, ItemUpdateRequestDTO request) {
         ServiceItem serviceItem = serviceItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
+            .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
 
         serviceItem.setName(request.getName());
         serviceItem.setPrice(request.getPrice());
@@ -61,7 +59,7 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public void deleteService(Long id) {
+    public void deleteServiceItem(Long id) {
         if (!serviceItemRepository.existsById(id)) {
             throw new IllegalArgumentException("ServiceItem not found");
         }
@@ -70,13 +68,12 @@ public class ServiceItemService {
 
     private ItemResponseDTO toResponseDTO(ServiceItem serviceItem) {
         return new ItemResponseDTO(
-                serviceItem.getId(),
-                serviceItem.getName(),
-                serviceItem.getPrice(),
-                "SERVICE",
-                serviceItem.getTaxRateId(),
-                null
+            serviceItem.getId(),
+            serviceItem.getName(),
+            serviceItem.getPrice(),
+            "SERVICE_ITEM",
+            serviceItem.getTaxRateId(),
+            null
         );
     }
 }
-
