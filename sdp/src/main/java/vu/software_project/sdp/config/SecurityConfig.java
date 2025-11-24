@@ -39,23 +39,12 @@ public class SecurityConfig {
             // Enable CORS using the CorsConfigurationSource bean below
             .cors(Customizer.withDefaults())
             // Configure CSRF to use cookie-based token; ignore login/logout/register for simplicity
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register")
+            .csrf(csrf -> csrf.disable()
             )
             // Session-based (cookie) authentication
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             // Authorization rules
-            .authorizeHttpRequests(auth -> auth
-                // Always allow CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Public auth endpoints
-                .requestMatchers("/api/login", "/api/logout", "/api/register").permitAll()
-                // Example URL-based role restrictions (adjust as you add endpoints)
-                .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
-                // Everything else requires authentication
-                .anyRequest().authenticated()
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll()
             )
             // We are doing cookie/session auth, no HTTP Basic or Bearer
             .httpBasic(httpBasic -> httpBasic.disable())
