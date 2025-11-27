@@ -16,7 +16,7 @@ export const createCashPayment = (
     orderId: string,
     amount: number
 ): Promise<CashPaymentResponse> => {
-    return fetchApi<CashPaymentResponse>(`/orders/${orderId}/payments`, {
+    return fetchApi<CashPaymentResponse>(`/api/orders/${orderId}/payments`, {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
