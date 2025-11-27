@@ -1,4 +1,4 @@
-package vu.software_project.sdp.DTOs;
+package vu.software_project.sdp.DTOs.payments;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

@@ -4,14 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vu.software_project.sdp.DTOs.CashPaymentRequestDTO;
-import vu.software_project.sdp.DTOs.CashPaymentResponseDTO;
+import vu.software_project.sdp.DTOs.payments.CashPaymentRequestDTO;
+import vu.software_project.sdp.DTOs.payments.CashPaymentResponseDTO;
 import vu.software_project.sdp.services.PaymentService;
 
-import java.util.Map;
-
 @RestController
-@RequestMapping("/orders/{orderId}/payments")
+@RequestMapping("/api/orders/{orderId}/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
