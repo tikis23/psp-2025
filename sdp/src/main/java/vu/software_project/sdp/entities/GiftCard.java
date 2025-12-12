@@ -30,4 +30,7 @@ public class GiftCard {
 
     @Column(nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    @Column
+    private Long businessId;
 }

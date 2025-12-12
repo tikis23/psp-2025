@@ -1,29 +1,25 @@
 package vu.software_project.sdp.DTOs.payments;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
-@Builder
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CashPaymentResponseDTO {
 
     private String id;
-
-    @JsonProperty("orderId")
     private String orderId;
-
-    @JsonProperty("payment_type")
     private String paymentType;
-
     private BigDecimal amount;
-
     private String status;
-
     private OffsetDateTime createdAt;
-
     private BigDecimal remainingBalance;
+    private BigDecimal tip;
 }

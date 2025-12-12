@@ -1,11 +1,11 @@
 package vu.software_project.sdp.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vu.software_project.sdp.DTOs.payments.CashPaymentRequestDTO;
-import vu.software_project.sdp.DTOs.payments.CashPaymentResponseDTO;
+import vu.software_project.sdp.DTOs.payments.*;
 import vu.software_project.sdp.services.PaymentService;
 
 @RestController
@@ -18,9 +18,33 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<?> createPayment(
             @PathVariable Long orderId,
-            @RequestBody CashPaymentRequestDTO request) {
+            @RequestBody @NotNull PaymentRequestDTO request
+    ) {
+        String type = request.getPaymentType();
+        if (type == null) {
+            return ResponseEntity.badRequest()
+                    .body("payment_type is required (cash, gift_card, ...)");
+        }
 
-        CashPaymentResponseDTO response = paymentService.createCashPayment(orderId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        switch (type.toLowerCase()) {
+            case "cash" -> {
+                CashPaymentResponseDTO response =
+                        paymentService.createCashPayment(orderId, request);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }
+            case "gift_card" -> {
+                GiftCardPaymentRequestDTO gcReq = new GiftCardPaymentRequestDTO();
+                gcReq.setAmount(request.getAmount());
+                gcReq.setGiftCardCode(request.getGiftCardCode());
+
+                GiftCardPaymentResponseDTO response =
+                        paymentService.createGiftCardPayment(orderId, gcReq);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }
+            default -> {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Unsupported payment_type: " + type);
+            }
+        }
     }
 }

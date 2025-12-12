@@ -36,31 +36,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Enable CORS using the CorsConfigurationSource bean below
-            .cors(Customizer.withDefaults())
-            // Configure CSRF to use cookie-based token; ignore login/logout/register for simplicity
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/orders/**")
-            )
-            // Session-based (cookie) authentication
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            // Authorization rules
-            .authorizeHttpRequests(auth -> auth
-                // Always allow CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Public auth endpoints
-                .requestMatchers("/api/login", "/api/logout", "/api/register").permitAll()
-                // Example URL-based role restrictions (adjust as you add endpoints)
-                .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
-                .requestMatchers("/orders/**").permitAll()
-                // Everything else requires authentication
-                .anyRequest().authenticated()
-            )
-            // We are doing cookie/session auth, no HTTP Basic or Bearer
-            .httpBasic(httpBasic -> httpBasic.disable())
-            .formLogin(form -> form.disable());
+                // Enable CORS using the CorsConfigurationSource bean below
+                .cors(Customizer.withDefaults())
+                // Configure CSRF to use cookie-based token; ignore login/logout/register for
+                // simplicity
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**",
+                                "/api/gift-cards/**"))
+                // Session-based (cookie) authentication
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                // Authorization rules
+                .authorizeHttpRequests(auth -> auth
+                        // Always allow CORS preflight
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public auth endpoints
+                        .requestMatchers("/api/login", "/api/logout", "/api/register").permitAll()
+                        // Example URL-based role restrictions (adjust as you add endpoints)
+                        .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
+                        .requestMatchers("/api/orders/**").permitAll()
+                        .requestMatchers("/api/gift-cards/**").permitAll()
+                        // Everything else requires authentication
+                        .anyRequest().authenticated())
+                // We are doing cookie/session auth, no HTTP Basic or Bearer
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable());
 
         return http.build();
     }
@@ -69,13 +70,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // IMPORTANT: with credentials=true, origins cannot be "*"; list explicit origins for dev
+        // IMPORTANT: with credentials=true, origins cannot be "*"; list explicit
+        // origins for dev
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5173"
-        ));
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("X-CSRF-TOKEN"));
@@ -96,10 +97,9 @@ public class SecurityConfig {
                 String rawPassword = authentication.getCredentials().toString();
                 User user = userService.verifyAuthentication(email, rawPassword);
                 return new UsernamePasswordAuthenticationToken(
-                    email,
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-                );
+                        email,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
             }
 
             @Override
