@@ -1,4 +1,4 @@
-package vu.software_project.sdp.DTOs.payments;
+package vu.software_project.sdp.DTOs.payments.cash;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

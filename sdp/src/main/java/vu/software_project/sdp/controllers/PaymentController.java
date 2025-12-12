@@ -6,6 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vu.software_project.sdp.DTOs.payments.*;
+import vu.software_project.sdp.DTOs.payments.cash.CashPaymentResponseDTO;
+import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentRequestDTO;
+import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentResponseDTO;
 import vu.software_project.sdp.services.PaymentService;
 
 @RestController

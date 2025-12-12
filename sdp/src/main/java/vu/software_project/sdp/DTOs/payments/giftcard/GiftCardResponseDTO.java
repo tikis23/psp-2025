@@ -1,4 +1,4 @@
-package vu.software_project.sdp.DTOs.payments;
+package vu.software_project.sdp.DTOs.payments.giftcard;
 
 import lombok.Builder;
 import lombok.Data;
