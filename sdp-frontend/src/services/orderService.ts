@@ -35,6 +35,26 @@ export interface Order {
   updatedAt: string;
 }
 
+export interface OrderInfo {
+  id: number;
+  merchantId: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getAllOrders = (merchantId: number): Promise<OrderInfo[]> => {
+  return fetchApi<OrderInfo[]>(`/api/orders/${merchantId}/all`, {
+    method: "GET",
+  });
+}
+
+export const getOrder = (orderId: number): Promise<Order> => {
+  return fetchApi<Order>(`/api/orders/${orderId}`, {
+    method: "GET",
+  });
+}
+
 export const createOrder = (merchantId: number): Promise<Order> => {
   return fetchApi<Order>("/api/orders", {
     method: "POST",

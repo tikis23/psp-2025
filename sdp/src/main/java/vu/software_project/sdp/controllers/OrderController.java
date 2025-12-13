@@ -1,7 +1,10 @@
 package vu.software_project.sdp.controllers;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import vu.software_project.sdp.DTOs.orders.CreateOrderRequestDTO;
 import vu.software_project.sdp.DTOs.orders.OrderDTO;
+import vu.software_project.sdp.DTOs.orders.OrderInfoDTO;
 import vu.software_project.sdp.DTOs.orders.OrderAddItemRequestDTO;
 import vu.software_project.sdp.services.OrderService;
 
@@ -35,6 +39,26 @@ public class OrderController {
         try {
             OrderDTO updatedOrder = orderService.addItemToOrder(orderId, request);
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<?> getOrderById(@PathVariable Long orderId) {
+        try {
+            OrderDTO orderDTO = orderService.getOrderById(orderId);
+            return ResponseEntity.status(HttpStatus.OK).body(orderDTO);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/{merchantId}/all")
+    public ResponseEntity<?> getAllOrders(@PathVariable Long merchantId) {
+        try {
+            List<OrderInfoDTO> orders = orderService.getAllOrders(merchantId);
+            return ResponseEntity.status(HttpStatus.OK).body(orders);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         }

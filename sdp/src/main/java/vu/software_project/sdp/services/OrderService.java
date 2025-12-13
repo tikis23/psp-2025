@@ -11,6 +11,7 @@ import vu.software_project.sdp.DTOs.item.ItemResponseDTO;
 import vu.software_project.sdp.DTOs.orders.CreateOrderRequestDTO;
 import vu.software_project.sdp.DTOs.orders.OrderAddItemRequestDTO;
 import vu.software_project.sdp.DTOs.orders.OrderDTO;
+import vu.software_project.sdp.DTOs.orders.OrderInfoDTO;
 import vu.software_project.sdp.DTOs.orders.OrderItemDTO;
 import vu.software_project.sdp.DTOs.orders.OrderItemVariationDTO;
 import vu.software_project.sdp.entities.Order;
@@ -36,6 +37,31 @@ public class OrderService {
         order = orderRepository.save(order);
 
         return mapToOrderDTO(order);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        return mapToOrderDTO(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderInfoDTO> getAllOrders(Long merchantId) {
+        List<Order> orders = orderRepository.findByMerchantId(merchantId);
+        List<OrderInfoDTO> orderDTOs = orders.stream()
+            .map(order -> {
+                OrderInfoDTO dto = new OrderInfoDTO();
+                dto.setId(order.getId());
+                dto.setMerchantId(order.getMerchantId());
+                dto.setStatus(order.getStatus());
+                dto.setCreatedAt(order.getCreatedAt());
+                dto.setUpdatedAt(order.getUpdatedAt());
+                return dto;
+            })
+            .toList();
+
+        return orderDTOs;
     }
 
     @Transactional
