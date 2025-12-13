@@ -2,15 +2,16 @@ export interface User {
   name: string
   email: string
   role: string
+  merchantId?: number
 }
 
 export interface AuthContextType {
   isAuthenticated: boolean
   user: User | null
-  isLoading: boolean // To handle the initial auth check loading state
-  login: (username: string, password: string) => Promise<void> // Throws error on failure
+  isLoading: boolean
+  login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  checkAuthStatus: () => Promise<void> // Function to re-check auth status
+  checkAuthStatus: () => Promise<void>
   changePassword: (
     oldPassword: string,
     newPassword: string,
@@ -22,4 +23,45 @@ export interface LocationState {
   from?: {
     pathname: string
   }
+}
+
+export interface Merchant {
+  id: number
+  name: string
+  address: string
+  contactInfo: string
+  ownerId: number
+}
+
+export interface ProductVariation {
+  id: number
+  name: string
+  priceOffset: number
+}
+
+export interface Item {
+  id: number
+  name: string
+  price: number
+  type: "PRODUCT" | "SERVICE_ITEM"
+  taxRateId?: string
+  variations?: ProductVariation[] | null
+}
+
+export interface ItemCreateRequest {
+  name: string
+  price: number
+  type: "PRODUCT" | "SERVICE_ITEM"
+  taxRateId?: string
+}
+
+export interface ItemUpdateRequest {
+  name: string
+  price: number
+  taxRateId?: string
+}
+
+export interface VariationCreateRequest {
+  name: string
+  priceOffset: number
 }
