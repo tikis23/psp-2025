@@ -1,8 +1,6 @@
 import { LoadingScreen } from "@/components/loading-screen";
 import { useAuth } from "@/contexts/auth-context";
-import type { LocationState } from "@/types";
 import React from "react";
-import { Navigate } from "react-router-dom";
 import { Outlet, useLocation } from "react-router-dom";
 import NavBar from "@/components/ui/navbar";
 

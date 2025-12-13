@@ -4,6 +4,13 @@ import { useAuth } from "@/contexts/auth-context";
 const HomePage = () => {
   const { user } = useAuth()
 
+  if (!user) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
+    return null // Prevent rendering on server side
+  }
+
   return (
     <div className="w-full flex items-center justify-center">
       <Card className="w-full max-w-md shadow-lg">

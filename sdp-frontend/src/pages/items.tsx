@@ -10,8 +10,10 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card } from "../components/ui/card"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function ItemsPage() {
+    const { user } = useAuth()
   const [items, setItems] = useState<Item[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -73,6 +75,13 @@ export default function ItemsPage() {
       console.error("Delete failed:", error)
       toast.error(error.message || "Failed to delete item")
     }
+  }
+
+  if (!user) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
+    return null // Prevent rendering on server side
   }
 
   return (
