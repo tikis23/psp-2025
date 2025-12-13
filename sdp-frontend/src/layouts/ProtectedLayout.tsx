@@ -17,11 +17,6 @@ const ProtectedLayout: React.FC = () => {
     return <LoadingScreen />
   }
 
-  if (!isAuthenticated) {
-    const state: LocationState = { from: location };
-    return <Navigate to="/login" state={state} replace />
-  }
-
   return (
     <div className="min-h-screen min-w-screen flex items-center justify-center p-4">
       <Outlet />
