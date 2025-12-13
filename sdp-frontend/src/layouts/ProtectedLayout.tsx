@@ -27,7 +27,7 @@ const ProtectedLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gray-100">
       <NavBar />
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-5xl px-4 py-6">
+        <div className="w-full px-4 py-6">
           <Outlet />
         </div>
       </main>
