@@ -4,6 +4,7 @@ import type { LocationState } from "@/types";
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { Outlet, useLocation } from "react-router-dom";
+import NavBar from "@/components/ui/navbar";
 
 const ProtectedLayout: React.FC = () => {
   // Here you can add any layout-specific logic, such as checking authentication status
@@ -18,8 +19,13 @@ const ProtectedLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen min-w-screen flex items-center justify-center p-4">
-      <Outlet />
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <NavBar />
+      <main className="flex-1 flex justify-center">
+        <div className="w-full max-w-5xl px-4 py-6">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 };
