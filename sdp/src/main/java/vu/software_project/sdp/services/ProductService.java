@@ -35,9 +35,10 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ItemResponseDTO getProductById(Long id) {
-        Product product = productRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+    public ItemResponseDTO getProductById(Long id, Long merchantId) {
+        Product product = productRepository.findByIdAndMerchantId(id, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
         return toResponseDTO(product);
     }
 
@@ -50,9 +51,10 @@ public class ProductService {
     }
 
     @Transactional
-    public ItemResponseDTO updateProduct(Long id, ItemUpdateRequestDTO request) {
-        Product product = productRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+    public ItemResponseDTO updateProduct(Long id, ItemUpdateRequestDTO request, Long merchantId) {
+        Product product = productRepository.findByIdAndMerchantId(id, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
 
         product.setName(request.getName());
         product.setPrice(request.getPrice());
@@ -63,9 +65,9 @@ public class ProductService {
     }
 
     @Transactional
-    public void deleteProduct(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new IllegalArgumentException("Product not found");
+    public void deleteProduct(Long id, Long merchantId) {
+        if (!productRepository.existsByIdAndMerchantId(id, merchantId)) {
+            throw new IllegalArgumentException("Product not found or access denied");
         }
         productRepository.deleteById(id);
     }
