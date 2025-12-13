@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import type { Order } from "@/services/orderService"
 import { useLocation } from "react-router-dom"
@@ -10,15 +8,19 @@ import OrderDetails from "@/components/orders/orderDetails"
 import ItemMenu from "@/components/orders/itemMenu"
 import { getAllItems } from "@/services/itemService"
 import type { Item } from "@/types"
+import { useAuth } from "@/contexts/auth-context"
 
 const OrdersPage = () => {
   const location = useLocation();
   const startNewOrder = location.state?.newOrder || false;
 
+  const { user } = useAuth();
+
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [availableItems, setAvailableItems] = useState<Item[]>([])
 
   useEffect(() => {
+    if (!user) return;
     if (!startNewOrder) return;
 
     setCurrentOrder(null);
@@ -30,7 +32,7 @@ const OrdersPage = () => {
       console.error("Error fetching items:", error);
     });
 
-    createOrder().then((order) => {
+    createOrder(user.merchantId!).then((order) => {
       setCurrentOrder(order);
       toast.success("New order Started");
     }).catch((error) => {

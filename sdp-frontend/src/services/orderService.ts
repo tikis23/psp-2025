@@ -23,7 +23,7 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
-  merchantId: string;
+  merchantId: number;
   status: OrderStatus;
   items: OrderItem[];
   // payments?: PaymentDTO[];
@@ -35,14 +35,14 @@ export interface Order {
   updatedAt: string;
 }
 
-export const createOrder = (): Promise<Order> => {
+export const createOrder = (merchantId: number): Promise<Order> => {
   return fetchApi<Order>("/api/orders", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      merchantId: "test",
+      merchantId: merchantId,
     }),
   });
 }
