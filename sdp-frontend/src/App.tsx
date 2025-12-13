@@ -6,6 +6,7 @@ import routes from "~react-pages"
 import { LoadingScreen } from "./components/loading-screen"
 import { Toaster } from "sonner"
 import ProtectedLayout from "./layouts/ProtectedLayout"
+import ItemsPage from "./pages/items"
 
 // import ProtectedLayout from "./layouts/ProtectedLayout" // Import the layout component
 // import NotFoundPage from "./pages/not-found"
@@ -33,6 +34,11 @@ function App() {
         // Any route not explicitly public will be nested under ProtectedLayout
         protectedRouteDefinitions.push(route)
       }
+    })
+
+    protectedRouteDefinitions.push({
+      path: "items",
+      element: <ItemsPage />,
     })
 
     // Create the final route configuration

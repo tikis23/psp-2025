@@ -9,6 +9,6 @@ public class UserRegisterRequestDTO {
     private String email;
     private String password;
     private User.Role role;
-    private String merchantId; // For BUSINESS_OWNER role
+    private Long merchantId; // For BUSINESS_OWNER role
 }
 
