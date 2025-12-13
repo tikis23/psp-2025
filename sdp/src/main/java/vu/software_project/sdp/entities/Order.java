@@ -24,7 +24,7 @@ public class Order {
     private Long id;
 
     @Column(nullable = false)
-    private String merchantId;
+    private Long merchantId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

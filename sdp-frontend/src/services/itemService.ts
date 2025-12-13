@@ -1,62 +1,80 @@
-import { fetchApi } from "./fetchClient";
-
-export type ItemType = "PRODUCT" | "SERVICE";
-
-export interface ProductVariation {
-  id: number;
-  name: string;
-  priceOffset: number;
-}
-
-export interface Item {
-  id: number;
-  name: string;
-  price: number;
-  type: ItemType;
-  taxRateId: string;
-  variations?: ProductVariation[];
-}
+import { fetchApi } from "./fetchClient"
+import type {
+  Item,
+  ItemCreateRequest,
+  ItemUpdateRequest,
+  ProductVariation,
+  VariationCreateRequest,
+} from "../types"
 
 export const getAllItems = (): Promise<Item[]> => {
-  return fetchApi<Item[]>("/api/items", {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  return fetchApi<Item[]>("/api/items", { method: "GET" })
 }
 
-export const createRandomItems = async () => {
-  return;
-  const item = {
-    name: "Random Item " + Math.floor(Math.random() * 1000),
-    price: parseFloat((Math.random() * 100).toFixed(2)),
-    type: "PRODUCT",
-    taxRateId: "123",
-  };
+export const getItem = (id: number): Promise<Item> => {
+  return fetchApi<Item>(`/api/items/${id}`, { method: "GET" })
+}
 
-  const realItem = await fetchApi<Item>("/api/items", {
+export const createItem = (data: ItemCreateRequest): Promise<Item> => {
+  return fetchApi<Item>("/api/items", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(item),
-  });
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  })
+}
 
-  for (let i = 1; i <= 3; i++) {
-    if (Math.random() < 0.2) continue;
+export const updateItem = (
+  id: number,
+  data: ItemUpdateRequest
+): Promise<Item> => {
+  return fetchApi<Item>(`/api/items/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  })
+}
 
-    const variation = {
-      name: `Variation ${i}`,
-      priceOffset: parseFloat((Math.random() * 20 - 10).toFixed(2)),
-    };
+export const deleteItem = (id: number): Promise<void> => {
+  return fetchApi<void>(`/api/items/${id}`, { method: "DELETE" })
+}
 
-    await fetchApi(`/api/items/${realItem.id}/variations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(variation),
-    })
-  }
+export const getVariations = (itemId: number): Promise<ProductVariation[]> => {
+  return fetchApi<ProductVariation[]>(`/api/items/${itemId}/variations`, {
+    method: "GET",
+  })
+}
+
+export const createVariation = (
+  itemId: number,
+  data: VariationCreateRequest
+): Promise<ProductVariation> => {
+  return fetchApi<ProductVariation>(`/api/items/${itemId}/variations`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  })
+}
+
+export const updateVariation = (
+  itemId: number,
+  variationId: number,
+  data: VariationCreateRequest
+): Promise<ProductVariation> => {
+  return fetchApi<ProductVariation>(
+    `/api/items/${itemId}/variations/${variationId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    }
+  )
+}
+
+export const deleteVariation = (
+  itemId: number,
+  variationId: number
+): Promise<void> => {
+  return fetchApi<void>(`/api/items/${itemId}/variations/${variationId}`, {
+    method: "DELETE",
+  })
 }

@@ -8,7 +8,8 @@ import { useLocation } from "react-router-dom"
 import { createOrder, addItemToOrder } from "@/services/orderService"
 import OrderDetails from "@/components/orders/orderDetails"
 import ItemMenu from "@/components/orders/itemMenu"
-import { createRandomItems, getAllItems, type Item } from "@/services/itemService"
+import { getAllItems } from "@/services/itemService"
+import type { Item } from "@/types"
 
 const OrdersPage = () => {
   const location = useLocation();
@@ -22,8 +23,6 @@ const OrdersPage = () => {
 
     setCurrentOrder(null);
 
-    createRandomItems();
-    createRandomItems();
     getAllItems().then((items) => {
       setAvailableItems(items);
     }).catch((error) => {

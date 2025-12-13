@@ -31,9 +31,10 @@ public class ServiceItemService {
     }
 
     @Transactional(readOnly = true)
-    public ItemResponseDTO getServiceItemById(Long id) {
-        ServiceItem serviceItem = serviceItemRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
+    public ItemResponseDTO getServiceItemById(Long id, Long merchantId) {
+        ServiceItem serviceItem = serviceItemRepository.findByIdAndMerchantId(id, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Service item not found or access denied"));
         return toResponseDTO(serviceItem);
     }
 
@@ -46,9 +47,10 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public ItemResponseDTO updateServiceItem(Long id, ItemUpdateRequestDTO request) {
-        ServiceItem serviceItem = serviceItemRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("ServiceItem not found"));
+    public ItemResponseDTO updateServiceItem(Long id, ItemUpdateRequestDTO request, Long merchantId) {
+        ServiceItem serviceItem = serviceItemRepository.findByIdAndMerchantId(id, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Service item not found or access denied"));
 
         serviceItem.setName(request.getName());
         serviceItem.setPrice(request.getPrice());
@@ -59,9 +61,9 @@ public class ServiceItemService {
     }
 
     @Transactional
-    public void deleteServiceItem(Long id) {
-        if (!serviceItemRepository.existsById(id)) {
-            throw new IllegalArgumentException("ServiceItem not found");
+    public void deleteServiceItem(Long id, Long merchantId) {
+        if (!serviceItemRepository.existsByIdAndMerchantId(id, merchantId)) {
+            throw new IllegalArgumentException("Service item not found or access denied");
         }
         serviceItemRepository.deleteById(id);
     }

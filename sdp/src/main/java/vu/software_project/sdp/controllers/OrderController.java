@@ -23,7 +23,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequestDTO request) {
-        if (request.getMerchantId() == null || request.getMerchantId().isEmpty()) {
+        if (request.getMerchantId() == null) {
             return ResponseEntity.badRequest().body("merchantId is required");
         }
         OrderDTO orderDTO = orderService.createOrder(request);

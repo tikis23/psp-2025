@@ -28,7 +28,8 @@ public class User {
 
     private String name; // Optional display name
 
-    private String merchantId; // For BUSINESS_OWNER role
+    @Column(name = "merchant_id")
+    private Long merchantId;
 
     public enum Role {
         SUPER_ADMIN,

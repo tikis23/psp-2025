@@ -13,7 +13,7 @@ import vu.software_project.sdp.entities.Order;
 public class OrderDTO {
 
     private Long id;
-    private String merchantId;
+    private Long merchantId;
     private Order.Status status;
     private List<OrderItemDTO> items;
     // private List<PaymentDTO> payments;

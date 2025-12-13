@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vu.software_project.sdp.DTOs.item.*;
+import vu.software_project.sdp.entities.Product;
 import vu.software_project.sdp.entities.ProductVariation;
+import vu.software_project.sdp.repositories.ProductRepository;
 import vu.software_project.sdp.repositories.ProductVariationRepository;
 import vu.software_project.sdp.services.ProductService;
 import vu.software_project.sdp.services.ServiceItemService;
@@ -20,10 +22,11 @@ public class ItemController {
     private final ProductService productService;
     private final ServiceItemService serviceItemService;
     private final ProductVariationRepository variationRepository;
+    private final ProductRepository productRepository;
 
-    // TODO: needed for auth
+    // This method should extract merchantId from the authenticated user's session/token
     private Long getMerchantId() {
-        return 1L;
+        return 1L; // Hardcoded for testing - returns merchant ID 1
     }
 
     @PostMapping
@@ -55,11 +58,15 @@ public class ItemController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ItemResponseDTO> getItem(@PathVariable Long id) {
+        Long merchantId = getMerchantId();
+        
+        // Try to get as product first, then try service
         try {
-            ItemResponseDTO response = productService.getProductById(id);
+            ItemResponseDTO response = productService.getProductById(id, merchantId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            ItemResponseDTO response = serviceItemService.getServiceItemById(id);
+            // Not a product or not authorized, try as service item
+            ItemResponseDTO response = serviceItemService.getServiceItemById(id, merchantId);
             return ResponseEntity.ok(response);
         }
     }
@@ -68,30 +75,46 @@ public class ItemController {
     public ResponseEntity<ItemResponseDTO> updateItem(
             @PathVariable Long id,
             @RequestBody ItemUpdateRequestDTO request) {
+        Long merchantId = getMerchantId();
+        
+        // Try to update as product first, then try service
         try {
-            ItemResponseDTO response = productService.updateProduct(id, request);
+            ItemResponseDTO response = productService.updateProduct(id, request, merchantId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            ItemResponseDTO response = serviceItemService.updateServiceItem(id, request);
+            // Not a product or not authorized, try as service item
+            ItemResponseDTO response = serviceItemService.updateServiceItem(id, request, merchantId);
             return ResponseEntity.ok(response);
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
+        Long merchantId = getMerchantId();
+        
+        // Try to delete as product first, then try service
         try {
-            productService.deleteProduct(id);
+            productService.deleteProduct(id, merchantId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            serviceItemService.deleteServiceItem(id);
+            // Not a product or not authorized, try as service item
+            serviceItemService.deleteServiceItem(id, merchantId);
             return ResponseEntity.noContent().build();
         }
     }
 
+    // ========== PRODUCT VARIATION ENDPOINTS ==========
+    
     @PostMapping("/{itemId}/variations")
     public ResponseEntity<ProductVariationResponseDTO> createVariation(
             @PathVariable Long itemId,
             @RequestBody ProductVariationCreateRequestDTO request) {
+        Long merchantId = getMerchantId();
+        
+        Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
+        
         ProductVariation variation = new ProductVariation();
         variation.setProductId(itemId);
         variation.setName(request.getName());
@@ -109,6 +132,12 @@ public class ItemController {
 
     @GetMapping("/{itemId}/variations")
     public ResponseEntity<List<ProductVariationResponseDTO>> getVariations(@PathVariable Long itemId) {
+        Long merchantId = getMerchantId();
+        
+        Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
+        
         List<ProductVariationResponseDTO> variations = variationRepository.findByProductId(itemId)
             .stream()
             .map(v -> new ProductVariationResponseDTO(v.getId(), v.getName(), v.getPriceOffset()))
@@ -122,8 +151,18 @@ public class ItemController {
             @PathVariable Long itemId,
             @PathVariable Long variationId,
             @RequestBody ProductVariationCreateRequestDTO request) {
+        Long merchantId = getMerchantId();
+        
+        Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
+        
         ProductVariation variation = variationRepository.findById(variationId)
             .orElseThrow(() -> new IllegalArgumentException("Variation not found"));
+
+        if (!variation.getProductId().equals(itemId)) {
+            throw new IllegalArgumentException("Variation does not belong to this product");
+        }
 
         variation.setName(request.getName());
         variation.setPriceOffset(request.getPriceOffset());
@@ -142,9 +181,19 @@ public class ItemController {
     public ResponseEntity<Void> deleteVariation(
             @PathVariable Long itemId,
             @PathVariable Long variationId) {
-        if (!variationRepository.existsById(variationId)) {
-            throw new IllegalArgumentException("Variation not found");
+        Long merchantId = getMerchantId();
+        
+        Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Product not found or access denied"));
+        
+        ProductVariation variation = variationRepository.findById(variationId)
+            .orElseThrow(() -> new IllegalArgumentException("Variation not found"));
+
+        if (!variation.getProductId().equals(itemId)) {
+            throw new IllegalArgumentException("Variation does not belong to this product");
         }
+
         variationRepository.deleteById(variationId);
         return ResponseEntity.noContent().build();
     }

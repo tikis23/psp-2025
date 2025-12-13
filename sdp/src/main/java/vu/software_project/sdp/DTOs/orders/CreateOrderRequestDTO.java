@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class CreateOrderRequestDTO {
-    private String merchantId;
+    private Long merchantId;
 }

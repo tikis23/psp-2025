@@ -43,7 +43,8 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         
-        ItemResponseDTO item = productService.getProductById(request.getItemId());
+        Long merchantId = order.getMerchantId();
+        ItemResponseDTO item = productService.getProductById(request.getItemId(), merchantId);
      
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
@@ -72,6 +73,8 @@ public class OrderService {
 
 
     private OrderDTO mapToOrderDTO(Order order) {
+        Long merchantId = order.getMerchantId();
+        
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxAmount = BigDecimal.ZERO;
         BigDecimal discountAmount = BigDecimal.ZERO;
@@ -101,7 +104,7 @@ public class OrderService {
 
             return OrderItemDTO.builder()
                 .id(item.getId())
-                .name(productService.getProductById(item.getItemId()).getName())
+                .name(productService.getProductById(item.getItemId(), merchantId).getName())
                 .price(item.getPrice())
                 .quantity(item.getQuantity())
                 .variations(variationDTOs)

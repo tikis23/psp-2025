@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { Item, ProductVariation } from "@/services/itemService";
+import type { Item, ProductVariation } from "@/types";
 
 interface ItemMenuProps {
   items: Item[];
