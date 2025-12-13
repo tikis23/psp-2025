@@ -1,4 +1,4 @@
-package vu.software_project.sdp.DTOs;
+package vu.software_project.sdp.DTOs.auth;
 
 import lombok.Data;
 import vu.software_project.sdp.entities.User;

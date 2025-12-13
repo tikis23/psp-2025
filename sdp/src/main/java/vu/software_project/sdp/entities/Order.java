@@ -30,7 +30,7 @@ public class Order {
     @Column(nullable = false)
     private Status status;
 
-    @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
     @OneToMany(mappedBy = "orderId", cascade = CascadeType.ALL, orphanRemoval = true)

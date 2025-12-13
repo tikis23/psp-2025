@@ -44,6 +44,7 @@ public class SecurityConfig {
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**",
                             "/api/gift-cards/**"))
+            .csrf(csrf -> csrf.disable())
             // Session-based (cookie) authentication
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             // Authorization rules
@@ -56,6 +57,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
                     .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
                     .requestMatchers("/api/orders/**").permitAll()
+                    .requestMatchers("/api/items/**").permitAll()
                     .requestMatchers("/api/gift-cards/**").permitAll()
                     // Everything else requires authentication
                     .anyRequest().authenticated())

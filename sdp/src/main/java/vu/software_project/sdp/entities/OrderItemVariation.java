@@ -2,8 +2,6 @@ package vu.software_project.sdp.entities;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -14,35 +12,26 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_item_variations")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderItem {
+public class OrderItemVariation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @JoinColumn(name = "order_item_id", nullable = false)
+    private OrderItem orderItem;
 
     @Column(nullable = false)
-    private Long itemId;
+    private Long productVariationId;
     
     @Column(nullable = false)
-    private Long taxRateId;
-
-    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItemVariation> variations = new ArrayList<>();
+    private BigDecimal priceOffset;
     
-    @Column(nullable = false)
-    private BigDecimal price;
-    
-    @Column(nullable = false)
-    private Long quantity;
-
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private OffsetDateTime createdAt;

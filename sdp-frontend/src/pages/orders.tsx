@@ -5,19 +5,31 @@ import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import type { Order } from "@/services/orderService"
 import { useLocation } from "react-router-dom"
-import { createOrder } from "@/services/orderService"
+import { createOrder, addItemToOrder } from "@/services/orderService"
 import OrderDetails from "@/components/orders/orderDetails"
+import ItemMenu from "@/components/orders/itemMenu"
+import { createRandomItems, getAllItems, type Item } from "@/services/itemService"
 
 const OrdersPage = () => {
   const location = useLocation();
   const startNewOrder = location.state?.newOrder || false;
 
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
+  const [availableItems, setAvailableItems] = useState<Item[]>([])
 
   useEffect(() => {
     if (!startNewOrder) return;
 
     setCurrentOrder(null);
+
+    createRandomItems();
+    createRandomItems();
+    getAllItems().then((items) => {
+      setAvailableItems(items);
+    }).catch((error) => {
+      toast.error("Failed to load available items. Please try again.");
+      console.error("Error fetching items:", error);
+    });
 
     createOrder().then((order) => {
       setCurrentOrder(order);
@@ -35,6 +47,21 @@ const OrdersPage = () => {
         <CardHeader>
           <CardTitle className="text-2xl text-center">Add Items</CardTitle>
         </CardHeader>
+        <CardContent>
+          <ItemMenu items={availableItems} onAddItem={(item, quantity, variation) => {
+            if (!currentOrder) {
+              toast.error("No active order. Please start a new order first.");
+              return;
+            }
+            addItemToOrder(currentOrder.id, item.id, quantity, variation?.id).then((updatedOrder) => {
+              setCurrentOrder(updatedOrder);
+              toast.success(`Added ${quantity} x ${item.name} to order.`);
+            }).catch((error) => {
+              toast.error("Failed to add item to order. Please try again.");
+              console.error("Error adding item to order:", error);
+            });
+          }} />
+        </CardContent>
       </Card>
 
       <Card className="w-2/8 shadow-lg">
