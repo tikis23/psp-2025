@@ -85,3 +85,23 @@ export const addItemToOrder = (
     }),
   });
 }
+
+export const updateOrderItemQuantity = (
+  orderId: number,
+  itemId: number,
+  newQuantity: number
+): Promise<Order> => {
+  return fetchApi<Order>(`/api/orders/${orderId}/items/${itemId}/quantity`, {
+    method: "PUT",
+    body: newQuantity.toString(),
+  });
+}
+
+export const removeItemFromOrder = (
+  orderId: number,
+  itemId: number
+): Promise<Order> => {
+  return fetchApi<Order>(`/api/orders/${orderId}/items/${itemId}`, {
+    method: "DELETE",
+  });
+}

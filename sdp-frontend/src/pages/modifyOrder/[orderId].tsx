@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import type { Order } from "@/services/orderService"
 import { useParams } from "react-router-dom"
-import { addItemToOrder, getOrder } from "@/services/orderService"
+import { addItemToOrder, getOrder, removeItemFromOrder, updateOrderItemQuantity } from "@/services/orderService"
 import OrderDetails from "@/components/orders/orderDetails"
 import ItemMenu from "@/components/orders/itemMenu"
 import { getAllItems } from "@/services/itemService"
@@ -45,6 +45,28 @@ const ModifyOrderPage = () => {
 
   }, [orderId])
 
+  const updateItemQuantity = (itemId: number, newQuantity: number) => {
+    if (!currentOrder) return;
+
+    updateOrderItemQuantity(currentOrder.id, itemId, newQuantity).then((updatedOrder) => {
+      setCurrentOrder(updatedOrder);
+    }).catch((error) => {
+      toast.error("Failed to update item quantity. Please try again.");
+      console.error("Error updating item quantity:", error);
+    });
+  }
+
+  const removeItem = (itemId: number) => {
+    if (!currentOrder) return;
+
+    removeItemFromOrder(currentOrder.id, itemId).then((updatedOrder) => {
+      setCurrentOrder(updatedOrder);
+    }).catch((error) => {
+      toast.error("Failed to remove item from order. Please try again.");
+      console.error("Error removing item from order:", error);
+    });
+  }
+
 
   return (
     <div className="w-full flex gap-4">
@@ -74,7 +96,18 @@ const ModifyOrderPage = () => {
           <CardTitle className="text-2xl text-center">Order Details</CardTitle>
         </CardHeader>
         <CardContent>
-          {currentOrder ? <OrderDetails order={currentOrder} /> : <p>No Order</p>}
+          {currentOrder ?
+            <OrderDetails
+                order={currentOrder}
+                onUpdateQuantity={(itemId, newQuantity) => {
+                    updateItemQuantity(itemId, newQuantity);
+                }}
+                onItemRemove={(itemId) => {
+                    removeItem(itemId);
+                }}
+            /> :
+            <p>No Order</p>
+            }
         </CardContent>
       </Card>
     </div>

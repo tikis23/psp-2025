@@ -1,6 +1,8 @@
 package vu.software_project.sdp.services;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -65,9 +67,51 @@ public class OrderService {
     }
 
     @Transactional
+    public OrderDTO updateOrderStatus(Long orderId, Order.Status status) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        order.setStatus(status);
+        order.setUpdatedAt(OffsetDateTime.now());
+        order = orderRepository.save(order);
+        return mapToOrderDTO(order);
+    }
+
+    @Transactional
+    public OrderDTO updateOrderItemQuantity(Long orderId, Long itemId, Long quantity) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        order.setUpdatedAt(OffsetDateTime.now());
+        
+        order.getItems().removeIf(item ->
+            item.getId().equals(itemId) && quantity <= 0L
+        );
+
+        order.getItems().stream()
+            .filter(item -> item.getId().equals(itemId))
+            .findFirst()
+            .ifPresent(item -> item.setQuantity(quantity));
+        
+        order = orderRepository.save(order);
+        return mapToOrderDTO(order);
+    }
+
+    @Transactional
+    public OrderDTO removeItemFromOrder(Long orderId, Long itemId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        order.setUpdatedAt(OffsetDateTime.now());
+        
+        order.getItems().removeIf(item -> item.getId().equals(itemId));
+        order = orderRepository.save(order);
+
+        return mapToOrderDTO(order);
+    }
+
+    @Transactional
     public OrderDTO addItemToOrder(Long orderId, OrderAddItemRequestDTO request) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        order.setUpdatedAt(OffsetDateTime.now());
         
         Long merchantId = order.getMerchantId();
         ItemResponseDTO item = productService.getProductById(request.getItemId(), merchantId);
@@ -116,7 +160,9 @@ public class OrderService {
         }
         BigDecimal total = subtotal.add(taxAmount).subtract(discountAmount);
 
-        List<OrderItemDTO> itemDTOs = order.getItems().stream().map(item -> {
+        List<OrderItemDTO> itemDTOs = order.getItems()
+            .stream().sorted(Comparator.comparing(OrderItem::getCreatedAt))
+            .map(item -> {
             List<OrderItemVariationDTO> variationDTOs = 
             item.getVariations().stream().map(variation -> 
                 OrderItemVariationDTO.builder()
