@@ -2,6 +2,7 @@ package vu.software_project.sdp.entities;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -46,9 +47,28 @@ public class Order {
 
     public enum Status {
         OPEN,
-        CLOSED,
+        // CLOSED, // unused. Paid/Cancelled/Refunded are more descriptive
         PAID,
         CANCELLED,
-        REFUNDED
+        REFUNDED;
+
+        private EnumSet<Status> allowedTransitions;
+        static {
+            OPEN.allowedTransitions = EnumSet.of(CANCELLED, PAID);
+            PAID.allowedTransitions = EnumSet.of(REFUNDED);
+            CANCELLED.allowedTransitions = EnumSet.noneOf(Status.class);
+            REFUNDED.allowedTransitions = EnumSet.noneOf(Status.class);
+        }
+
+        public boolean canTransitionTo(Status newStatus) {
+            return allowedTransitions.contains(newStatus);
+        }
+
+        public Status transitionTo(Status newStatus) {
+            if (!canTransitionTo(newStatus)) {
+                throw new IllegalStateException("Invalid status transition from " + this + " to " + newStatus);
+            }
+            return newStatus;
+        }
     }
 }

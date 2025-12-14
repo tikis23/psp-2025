@@ -16,11 +16,14 @@ import vu.software_project.sdp.DTOs.orders.OrderDTO;
 import vu.software_project.sdp.DTOs.orders.OrderInfoDTO;
 import vu.software_project.sdp.DTOs.orders.OrderItemDTO;
 import vu.software_project.sdp.DTOs.orders.OrderItemVariationDTO;
+import vu.software_project.sdp.DTOs.orders.PaymentInfoDTO;
 import vu.software_project.sdp.entities.Order;
 import vu.software_project.sdp.entities.OrderItem;
 import vu.software_project.sdp.entities.OrderItemVariation;
+import vu.software_project.sdp.entities.Payment;
 import vu.software_project.sdp.entities.ProductVariation;
 import vu.software_project.sdp.repositories.OrderRepository;
+import vu.software_project.sdp.repositories.PaymentRepository;
 import vu.software_project.sdp.repositories.ProductVariationRepository;
 
 @Service
@@ -29,6 +32,7 @@ public class OrderService {
     
     private final OrderRepository orderRepository;
     private final ProductService productService;
+    private final PaymentRepository paymentRepository;
     private final ProductVariationRepository variationRepository;
 
     @Transactional
@@ -70,7 +74,9 @@ public class OrderService {
     public OrderDTO updateOrderStatus(Long orderId, Order.Status status) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        order.setStatus(status);
+
+        Order.Status newStatus = order.getStatus().transitionTo(status);
+        order.setStatus(newStatus);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
         return mapToOrderDTO(order);
@@ -80,17 +86,21 @@ public class OrderService {
     public OrderDTO updateOrderItemQuantity(Long orderId, Long itemId, Long quantity) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        order.setUpdatedAt(OffsetDateTime.now());
-        
+            
+        if (!order.getStatus().equals(Order.Status.OPEN)) {
+            throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
+        }
+
         order.getItems().removeIf(item ->
             item.getId().equals(itemId) && quantity <= 0L
         );
-
-        order.getItems().stream()
-            .filter(item -> item.getId().equals(itemId))
-            .findFirst()
-            .ifPresent(item -> item.setQuantity(quantity));
         
+        order.getItems().stream()
+        .filter(item -> item.getId().equals(itemId))
+        .findFirst()
+        .ifPresent(item -> item.setQuantity(quantity));
+        
+        order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
         return mapToOrderDTO(order);
     }
@@ -99,9 +109,13 @@ public class OrderService {
     public OrderDTO removeItemFromOrder(Long orderId, Long itemId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        order.setUpdatedAt(OffsetDateTime.now());
-        
+            
+        if (!order.getStatus().equals(Order.Status.OPEN)) {
+            throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
+        }
+
         order.getItems().removeIf(item -> item.getId().equals(itemId));
+        order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
         return mapToOrderDTO(order);
@@ -111,11 +125,14 @@ public class OrderService {
     public OrderDTO addItemToOrder(Long orderId, OrderAddItemRequestDTO request) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        order.setUpdatedAt(OffsetDateTime.now());
         
+        if (!order.getStatus().equals(Order.Status.OPEN)) {
+            throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
+        }
+
         Long merchantId = order.getMerchantId();
         ItemResponseDTO item = productService.getProductById(request.getItemId(), merchantId);
-     
+        
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
         orderItem.setItemId(item.getId());
@@ -123,10 +140,10 @@ public class OrderService {
         orderItem.setTaxRateId(0L);
         orderItem.setPrice(item.getPrice());
         orderItem.setQuantity(request.getQuantity());
-
+        
         if (null != request.getVariationId()) {
             ProductVariation variation = variationRepository.findById(request.getVariationId())
-                .orElseThrow(() -> new IllegalArgumentException("Product variation not found"));
+            .orElseThrow(() -> new IllegalArgumentException("Product variation not found"));
             
             OrderItemVariation itemVariation = new OrderItemVariation();
             itemVariation.setOrderItem(orderItem);
@@ -136,6 +153,7 @@ public class OrderService {
         }
         
         order.getItems().add(orderItem);
+        order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
         return mapToOrderDTO(order);
@@ -183,11 +201,23 @@ public class OrderService {
                 .build();
         }).toList();
 
+        List<PaymentInfoDTO> paymentDTOs = paymentRepository.findByOrderId(order.getId())
+            .stream().sorted(Comparator.comparing(Payment::getCreatedAt))
+            .map(payment -> PaymentInfoDTO.builder()
+                .id(payment.getId())
+                .type(payment.getPaymentType())
+                .status(payment.getStatus())
+                .amount(payment.getAmount())
+                .tip(payment.getTip())
+                .build()
+            ).toList();
+
         return OrderDTO.builder()
             .id(order.getId())
             .merchantId(order.getMerchantId())
             .status(order.getStatus())
             .items(itemDTOs)
+            .payments(paymentDTOs)
             .subtotal(subtotal)
             .taxAmount(taxAmount)
             .discountAmount(discountAmount)

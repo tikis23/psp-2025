@@ -1,4 +1,5 @@
 import { fetchApi } from "./fetchClient";
+import type { PaymentStatus, PaymentType } from "./paymentService";
 
 export type OrderStatus = 
   | "OPEN"
@@ -21,12 +22,20 @@ export interface OrderItem {
   variations: OrderItemVariation[];
 }
 
+export interface OrderPaymentInfo {
+  id: number;
+  type: PaymentType;
+  status: PaymentStatus;
+  amount: number;
+  tip: number; 
+}
+
 export interface Order {
   id: number;
   merchantId: number;
   status: OrderStatus;
   items: OrderItem[];
-  // payments?: PaymentDTO[];
+  payments: OrderPaymentInfo[];
   subtotal: number;
   taxAmount: number;
   discountAmount: number;
@@ -103,5 +112,15 @@ export const removeItemFromOrder = (
 ): Promise<Order> => {
   return fetchApi<Order>(`/api/orders/${orderId}/items/${itemId}`, {
     method: "DELETE",
+  });
+}
+
+export const updateOrderStatus = (
+  orderId: number,
+  newStatus: OrderStatus
+): Promise<Order> => {
+  return fetchApi<Order>(`/api/orders/${orderId}/status`, {
+    method: "PUT",
+    body: newStatus,
   });
 }

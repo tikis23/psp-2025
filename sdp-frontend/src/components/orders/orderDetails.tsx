@@ -1,16 +1,27 @@
 import type { Order, OrderItem, OrderItemVariation } from "@/services/orderService";
+import { Button } from "../ui/button";
 
 export interface OrderDetailsProps {
   order: Order;
-  onUpdateQuantity: (itemId: number, newQuantity: number) => void;
-  onItemRemove: (itemId: number) => void;
+  onUpdateQuantity?: (itemId: number, newQuantity: number) => void;
+  onItemRemove?: (itemId: number) => void;
+  onCancel?: () => void;
+  onPay?: () => void;
 }
 
-const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onUpdateQuantity, onItemRemove }) => {
+const OrderDetails: React.FC<OrderDetailsProps> = ({
+  order,
+  onUpdateQuantity,
+  onItemRemove,
+  onCancel,
+  onPay }) => {
+
   const updateQuantity = (itemId: number, newQuantity: number) => {
+    if (!onUpdateQuantity) return;
     onUpdateQuantity(itemId, newQuantity);
   }
   const removeItem = (itemId: number) => {
+    if (!onItemRemove) return;
     onItemRemove(itemId);
   }
   
@@ -36,16 +47,20 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onUpdateQuantity, on
           <div className="space-y-2">
             {order.items.map((item: OrderItem) => (
               <div key={item.id} className="p-2 border rounded flex gap-3">
-                <div className="flex flex-col items-center justify-center gap-0 text-l leading-none">
-                  <span
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="cursor-pointer select-none text-gray-500 hover:text-black"
-                  >+</span>
-                  <span
-                    onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
-                    className="cursor-pointer select-none text-gray-500 hover:text-black"
-                  >−</span>
-                </div>
+                {/* Quantity controls */}
+                {
+                  onUpdateQuantity &&
+                  <div className="flex flex-col items-center justify-center gap-0 text-l leading-none">
+                    <span
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="cursor-pointer select-none text-gray-500 hover:text-black"
+                      >+</span>
+                    <span
+                      onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                      className="cursor-pointer select-none text-gray-500 hover:text-black"
+                      >−</span>
+                  </div>
+                }
 
                 
                 {/* Item info */}
@@ -65,10 +80,13 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onUpdateQuantity, on
                           item.quantity
                         ).toFixed(2)}
                       </span>
-                      <span
-                        onClick={() => removeItem(item.id)}
-                        className="ml-4 cursor-pointer text-red-500 hover:text-red-700"
-                      >×</span>
+                      {
+                        onItemRemove && 
+                        <span
+                          onClick={() => removeItem(item.id)}
+                          className="ml-4 cursor-pointer text-red-500 hover:text-red-700"
+                        >×</span>
+                      }
                     </div>
                   </div>
 
@@ -109,6 +127,50 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onUpdateQuantity, on
           <span>Total</span>
           <span>${order.total.toFixed(2)}</span>
         </div>
+      </div>
+
+      {/* Payments */}
+      {order.payments.length > 0 && (
+        <div className="border-t pt-4 space-y-3 text-sm">
+          <h3 className="text-lg font-semibold">Payments</h3>
+
+          {order.payments.map((payment) => (
+            <div key={payment.id} className="flex justify-between items-start">
+              {/* Left: payment type */}
+              <span className="font-medium">{payment.type}</span>
+
+              {/* Right: amount + status + tip */}
+              <div className="text-right">
+                <div>
+                  ${payment.amount.toFixed(2)}{" "}
+                  <span className="">
+                    - {payment.status}
+                  </span>
+                </div>
+
+                {payment.tip > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Tip: ${payment.tip.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="border-t pt-4 flex gap-4 justify-end">
+        {onCancel && (
+          <Button className="w-1/3" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+        {onPay && (
+          <Button className="w-1/3" onClick={onPay}>
+            Take Payment
+          </Button>
+        )}
       </div>
 
       {/* Timestamps */}

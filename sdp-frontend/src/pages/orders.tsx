@@ -40,7 +40,7 @@ const OrdersPage = () => {
                                     <th className="border px-4 py-2">Status</th>
                                     <th className="border px-4 py-2">Created At</th>
                                     <th className="border px-4 py-2">Updated At</th>
-                                    <th className="border px-4 py-2">Modify</th>
+                                    <th className="border px-4 py-2">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -51,15 +51,14 @@ const OrdersPage = () => {
                                         <td className="border px-4 py-2 text-center">{new Date(order.createdAt).toLocaleString()}</td>
                                         <td className="border px-4 py-2 text-center">{new Date(order.updatedAt).toLocaleString()}</td>
                                         <td className="border px-4 py-2 text-center">
-                                            {
-                                                order.status === "OPEN" ?
-                                                <Button
-                                                    className="flex-1"
-                                                    onClick={() => navigate(`/modifyOrder/${order.id}`)}
-                                                >
-                                                Modify
-                                            </Button> : <></>
-                                            }
+                                            <Button
+                                                className="flex-1"
+                                                onClick={() => navigate(`/modifyOrder/${order.id}`)}
+                                            >
+                                                {
+                                                    order.status === "OPEN" ? "Modify" : "View"
+                                                }
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}

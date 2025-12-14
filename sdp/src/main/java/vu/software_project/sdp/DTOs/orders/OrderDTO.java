@@ -16,7 +16,7 @@ public class OrderDTO {
     private Long merchantId;
     private Order.Status status;
     private List<OrderItemDTO> items;
-    // private List<PaymentDTO> payments;
+    private List<PaymentInfoDTO> payments;
     private BigDecimal subtotal;
     private BigDecimal taxAmount;
     private BigDecimal discountAmount;

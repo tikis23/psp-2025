@@ -26,16 +26,16 @@ public class PaymentController {
         String type = request.getPaymentType();
         if (type == null) {
             return ResponseEntity.badRequest()
-                    .body("payment_type is required (cash, gift_card, ...)");
+                    .body("payment_type is required (CASH, GIFT_CARD, ...)");
         }
 
-        switch (type.toLowerCase()) {
-            case "cash" -> {
+        switch (type.toUpperCase()) {
+            case "CASH" -> {
                 CashPaymentResponseDTO response =
                         paymentService.createCashPayment(orderId, request);
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
             }
-            case "gift_card" -> {
+            case "GIFT_CARD" -> {
                 GiftCardPaymentRequestDTO gcReq = new GiftCardPaymentRequestDTO();
                 gcReq.setAmount(request.getAmount());
                 gcReq.setGiftCardCode(request.getGiftCardCode());

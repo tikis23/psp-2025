@@ -3,17 +3,19 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import type { Order } from "@/services/orderService"
 import { useParams } from "react-router-dom"
-import { addItemToOrder, getOrder, removeItemFromOrder, updateOrderItemQuantity } from "@/services/orderService"
+import { addItemToOrder, getOrder, removeItemFromOrder, updateOrderItemQuantity, updateOrderStatus } from "@/services/orderService"
 import OrderDetails from "@/components/orders/orderDetails"
 import ItemMenu from "@/components/orders/itemMenu"
 import { getAllItems } from "@/services/itemService"
 import type { Item } from "@/types"
+import PaymentOverlay from "@/components/orders/paymentOverlay"
 
 const ModifyOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>();
 
-  const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
-  const [availableItems, setAvailableItems] = useState<Item[]>([])
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [availableItems, setAvailableItems] = useState<Item[]>([]);
+  const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
 
   useEffect(() => {
     setCurrentOrder(null);
@@ -67,9 +69,37 @@ const ModifyOrderPage = () => {
     });
   }
 
+  const cancelOrder = () => {
+    if (!currentOrder) return;
+
+    updateOrderStatus(currentOrder.id, "CANCELLED").then((updatedOrder) => {
+      setCurrentOrder(updatedOrder);
+      toast.success("Order cancelled.");
+    }).catch((error) => {
+      toast.error("Failed to cancel order. Please try again.");
+      console.error("Error cancelling order:", error);
+    });
+  }
+
+  const payOrder = () => {
+    if (!currentOrder) return;
+    setShowPaymentOverlay(true);
+  }
 
   return (
     <div className="w-full flex gap-4">
+
+      {showPaymentOverlay && currentOrder && (
+        <div className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
+          <div className="fixed inset-0 z-40 bg-[rgba(0,0,0,0.3)]"
+            onClick={() => setShowPaymentOverlay(false)}
+          />
+          <div className="fixed z-50">
+            <PaymentOverlay order={currentOrder}/>
+          </div>
+        </div>
+      )}
+
       <Card className="w-6/8 shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Add Items</CardTitle>
@@ -97,17 +127,24 @@ const ModifyOrderPage = () => {
         </CardHeader>
         <CardContent>
           {currentOrder ?
-            <OrderDetails
+            (currentOrder.status === "OPEN" ?
+              <OrderDetails
                 order={currentOrder}
                 onUpdateQuantity={(itemId, newQuantity) => {
-                    updateItemQuantity(itemId, newQuantity);
+                  updateItemQuantity(itemId, newQuantity);
                 }}
                 onItemRemove={(itemId) => {
-                    removeItem(itemId);
+                  removeItem(itemId);
                 }}
-            /> :
+                onCancel={cancelOrder}
+                onPay={payOrder}
+              /> :
+              <OrderDetails
+                order={currentOrder}
+              />
+            ) :
             <p>No Order</p>
-            }
+          }
         </CardContent>
       </Card>
     </div>
