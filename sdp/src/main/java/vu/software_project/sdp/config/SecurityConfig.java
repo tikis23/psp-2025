@@ -42,8 +42,7 @@ public class SecurityConfig {
             // simplicity
             .csrf(csrf -> csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**",
-                            "/api/gift-cards/**"))
+                    .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**", "/api/gift-cards/**", "/api/reservations/**", "/api/items/**", "/api/finance/**"))
 
             // Session-based (cookie) authentication
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

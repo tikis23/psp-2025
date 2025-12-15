@@ -8,6 +8,7 @@ import vu.software_project.sdp.repositories.GiftCardRepository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Service
@@ -17,15 +18,15 @@ public class GiftCardService {
     private final GiftCardRepository giftCardRepository;
 
     @Transactional
-    public GiftCard createGiftCard(BigDecimal initialAmount) {
-        if (initialAmount == null || initialAmount.compareTo(BigDecimal.ZERO) <= 0) {
+    public GiftCard createGiftCard(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Gift card amount must be positive");
         }
 
         GiftCard gc = new GiftCard();
         gc.setCode(generateCode());
-        gc.setInitialBalance(initialAmount);
-        gc.setCurrentBalance(initialAmount);
+        gc.setInitialBalance(amount);
+        gc.setCurrentBalance(amount);
         gc.setActive(true);
         gc.setCreatedAt(OffsetDateTime.now());
 
@@ -59,4 +60,18 @@ public class GiftCardService {
     private String generateCode() {
         return "GC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<GiftCard> getAll() {
+        return giftCardRepository.findAll();
+    }
+
+    @Transactional
+    public void deleteByCode(String code) {
+        if (!giftCardRepository.existsById(code)) {
+            throw new IllegalArgumentException("GIFT_CARD_NOT_FOUND");
+        }
+        giftCardRepository.deleteById(code);
+    }
+
 }
