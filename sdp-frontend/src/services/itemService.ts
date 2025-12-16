@@ -7,16 +7,19 @@ import type {
   VariationCreateRequest,
 } from "../types"
 
-export const getAllItems = (): Promise<Item[]> => {
-  return fetchApi<Item[]>("/api/items", { method: "GET" })
+export const getAllItems = (merchantId: number): Promise<Item[]> => {
+  return fetchApi<Item[]>(`/api/items?merchantId=${merchantId}`)
 }
 
-export const getItem = (id: number): Promise<Item> => {
-  return fetchApi<Item>(`/api/items/${id}`, { method: "GET" })
+export const getItem = (id: number, merchantId: number): Promise<Item> => {
+  return fetchApi<Item>(`/api/items/${id}?merchantId=${merchantId}`)
 }
 
-export const createItem = (data: ItemCreateRequest): Promise<Item> => {
-  return fetchApi<Item>("/api/items", {
+export const createItem = (
+  data: ItemCreateRequest,
+  merchantId: number
+): Promise<Item> => {
+  return fetchApi<Item>(`/api/items?merchantId=${merchantId}`, {
     method: "POST",
     body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
@@ -25,43 +28,54 @@ export const createItem = (data: ItemCreateRequest): Promise<Item> => {
 
 export const updateItem = (
   id: number,
-  data: ItemUpdateRequest
+  data: ItemUpdateRequest,
+  merchantId: number
 ): Promise<Item> => {
-  return fetchApi<Item>(`/api/items/${id}`, {
+  return fetchApi<Item>(`/api/items/${id}?merchantId=${merchantId}`, {
     method: "PUT",
     body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
   })
 }
 
-export const deleteItem = (id: number): Promise<void> => {
-  return fetchApi<void>(`/api/items/${id}`, { method: "DELETE" })
+export const deleteItem = (id: number, merchantId: number): Promise<void> => {
+  return fetchApi<void>(`/api/items/${id}?merchantId=${merchantId}`, {
+    method: "DELETE",
+  })
 }
 
-export const getVariations = (itemId: number): Promise<ProductVariation[]> => {
-  return fetchApi<ProductVariation[]>(`/api/items/${itemId}/variations`, {
-    method: "GET",
-  })
+export const getVariations = (
+  itemId: number,
+  merchantId: number
+): Promise<ProductVariation[]> => {
+  return fetchApi<ProductVariation[]>(
+    `/api/items/${itemId}/variations?merchantId=${merchantId}`
+  )
 }
 
 export const createVariation = (
   itemId: number,
-  data: VariationCreateRequest
+  data: VariationCreateRequest,
+  merchantId: number
 ): Promise<ProductVariation> => {
-  return fetchApi<ProductVariation>(`/api/items/${itemId}/variations`, {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: { "Content-Type": "application/json" },
-  })
+  return fetchApi<ProductVariation>(
+    `/api/items/${itemId}/variations?merchantId=${merchantId}`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    }
+  )
 }
 
 export const updateVariation = (
   itemId: number,
   variationId: number,
-  data: VariationCreateRequest
+  data: VariationCreateRequest,
+  merchantId: number
 ): Promise<ProductVariation> => {
   return fetchApi<ProductVariation>(
-    `/api/items/${itemId}/variations/${variationId}`,
+    `/api/items/${itemId}/variations/${variationId}?merchantId=${merchantId}`,
     {
       method: "PUT",
       body: JSON.stringify(data),
@@ -72,9 +86,13 @@ export const updateVariation = (
 
 export const deleteVariation = (
   itemId: number,
-  variationId: number
+  variationId: number,
+  merchantId: number
 ): Promise<void> => {
-  return fetchApi<void>(`/api/items/${itemId}/variations/${variationId}`, {
-    method: "DELETE",
-  })
+  return fetchApi<void>(
+    `/api/items/${itemId}/variations/${variationId}?merchantId=${merchantId}`,
+    {
+      method: "DELETE",
+    }
+  )
 }

@@ -24,15 +24,11 @@ public class ItemController {
     private final ProductVariationRepository variationRepository;
     private final ProductRepository productRepository;
 
-    // This method should extract merchantId from the authenticated user's session/token
-    private Long getMerchantId() {
-        return 1L; // Hardcoded for testing - returns merchant ID 1
-    }
-
     @PostMapping
-    public ResponseEntity<ItemResponseDTO> createItem(@RequestBody ItemCreateRequestDTO request) {
-        Long merchantId = getMerchantId();
-
+    public ResponseEntity<ItemResponseDTO> createItem(
+            @RequestBody ItemCreateRequestDTO request,
+            @RequestParam Long merchantId) {
+        
         if ("PRODUCT".equalsIgnoreCase(request.getType())) {
             ItemResponseDTO response = productService.createProduct(request, merchantId);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -44,9 +40,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ItemResponseDTO>> getAllItems() {
-        Long merchantId = getMerchantId();
-
+    public ResponseEntity<List<ItemResponseDTO>> getAllItems(@RequestParam Long merchantId) {
         List<ItemResponseDTO> products = productService.getProductsByMerchant(merchantId);
         List<ItemResponseDTO> services = serviceItemService.getServiceItemsByMerchant(merchantId);
 
@@ -57,15 +51,14 @@ public class ItemController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ItemResponseDTO> getItem(@PathVariable Long id) {
-        Long merchantId = getMerchantId();
+    public ResponseEntity<ItemResponseDTO> getItem(
+            @PathVariable Long id,
+            @RequestParam Long merchantId) {
         
-        // Try to get as product first, then try service
         try {
             ItemResponseDTO response = productService.getProductById(id, merchantId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            // Not a product or not authorized, try as service item
             ItemResponseDTO response = serviceItemService.getServiceItemById(id, merchantId);
             return ResponseEntity.ok(response);
         }
@@ -74,30 +67,27 @@ public class ItemController {
     @PutMapping("/{id}")
     public ResponseEntity<ItemResponseDTO> updateItem(
             @PathVariable Long id,
-            @RequestBody ItemUpdateRequestDTO request) {
-        Long merchantId = getMerchantId();
+            @RequestBody ItemUpdateRequestDTO request,
+            @RequestParam Long merchantId) {
         
-        // Try to update as product first, then try service
         try {
             ItemResponseDTO response = productService.updateProduct(id, request, merchantId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            // Not a product or not authorized, try as service item
             ItemResponseDTO response = serviceItemService.updateServiceItem(id, request, merchantId);
             return ResponseEntity.ok(response);
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
-        Long merchantId = getMerchantId();
+    public ResponseEntity<Void> deleteItem(
+            @PathVariable Long id,
+            @RequestParam Long merchantId) {
         
-        // Try to delete as product first, then try service
         try {
             productService.deleteProduct(id, merchantId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            // Not a product or not authorized, try as service item
             serviceItemService.deleteServiceItem(id, merchantId);
             return ResponseEntity.noContent().build();
         }
@@ -108,9 +98,10 @@ public class ItemController {
     @PostMapping("/{itemId}/variations")
     public ResponseEntity<ProductVariationResponseDTO> createVariation(
             @PathVariable Long itemId,
-            @RequestBody ProductVariationCreateRequestDTO request) {
-        Long merchantId = getMerchantId();
+            @RequestBody ProductVariationCreateRequestDTO request,
+            @RequestParam Long merchantId) {
         
+        // Authorization check
         Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
             .orElseThrow(() -> new IllegalArgumentException(
                 "Product not found or access denied"));
@@ -131,9 +122,11 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}/variations")
-    public ResponseEntity<List<ProductVariationResponseDTO>> getVariations(@PathVariable Long itemId) {
-        Long merchantId = getMerchantId();
+    public ResponseEntity<List<ProductVariationResponseDTO>> getVariations(
+            @PathVariable Long itemId,
+            @RequestParam Long merchantId) {
         
+        // Authorization check
         Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
             .orElseThrow(() -> new IllegalArgumentException(
                 "Product not found or access denied"));
@@ -150,9 +143,10 @@ public class ItemController {
     public ResponseEntity<ProductVariationResponseDTO> updateVariation(
             @PathVariable Long itemId,
             @PathVariable Long variationId,
-            @RequestBody ProductVariationCreateRequestDTO request) {
-        Long merchantId = getMerchantId();
+            @RequestBody ProductVariationCreateRequestDTO request,
+            @RequestParam Long merchantId) {
         
+        // Authorization check
         Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
             .orElseThrow(() -> new IllegalArgumentException(
                 "Product not found or access denied"));
@@ -180,9 +174,9 @@ public class ItemController {
     @DeleteMapping("/{itemId}/variations/{variationId}")
     public ResponseEntity<Void> deleteVariation(
             @PathVariable Long itemId,
-            @PathVariable Long variationId) {
-        Long merchantId = getMerchantId();
-        
+            @PathVariable Long variationId,
+            @RequestParam Long merchantId) {
+        // Authorization check
         Product product = productRepository.findByIdAndMerchantId(itemId, merchantId)
             .orElseThrow(() -> new IllegalArgumentException(
                 "Product not found or access denied"));
