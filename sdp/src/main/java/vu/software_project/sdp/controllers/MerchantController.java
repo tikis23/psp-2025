@@ -7,13 +7,16 @@ import org.springframework.web.bind.annotation.*;
 import vu.software_project.sdp.DTOs.merchant.MerchantCreateRequestDTO;
 import vu.software_project.sdp.DTOs.merchant.MerchantResponseDTO;
 import vu.software_project.sdp.DTOs.merchant.MerchantUpdateRequestDTO;
+import vu.software_project.sdp.entities.User;
 import vu.software_project.sdp.services.MerchantService;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/merchants")
 @RequiredArgsConstructor
 public class MerchantController {
+
     private final MerchantService merchantService;
 
     @PostMapping
@@ -48,4 +51,19 @@ public class MerchantController {
         merchantService.deleteMerchant(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{merchantId}/users")
+    public ResponseEntity<List<User>> getMerchantUsers(@PathVariable Long merchantId) {
+        List<User> users = merchantService.getUsersByMerchantId(merchantId);
+        return ResponseEntity.ok(users);
+    }
+
+    @PostMapping("/{merchantId}/users/{userId}")
+    public ResponseEntity<Void> addUserToMerchant(
+            @PathVariable Long merchantId,
+            @PathVariable Long userId) {
+        merchantService.addUserToMerchant(merchantId, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
 }
