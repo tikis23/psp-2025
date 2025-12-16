@@ -1,7 +1,15 @@
 import { fetchApi } from "./fetchClient"
 
-export type PaymentType = "cash" | "gift_card" | "card"
+export type PaymentType = "CASH" | "GIFT_CARD" | "CARD";
 
+export type PaymentStatus = 
+    "REQUIRES_ACTION" |
+    "PROCESSING" |
+    "SUCCEEDED" |
+    "FAILED" |
+    "CANCELED" |
+    "REFUNDED";
+    
 export interface CashPaymentResponse {
     id: string
     orderId: string
@@ -36,7 +44,8 @@ export const createGiftCard = (
 
 export const createCashPayment = (
     orderId: string,
-    amount: number
+    amount: number,
+    tip?: number
 ): Promise<CashPaymentResponse> => {
     return fetchApi<CashPaymentResponse>(`/api/orders/${orderId}/payments`, {
         method: "POST",
@@ -44,8 +53,9 @@ export const createCashPayment = (
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            payment_type: "cash",
+            payment_type: "CASH",
             amount,
+            tip,
         }),
     })
 }
@@ -53,15 +63,17 @@ export const createCashPayment = (
 export const createGiftCardPayment = (
     orderId: string,
     amount: number,
-    giftCardCode: string
+    giftCardCode: string,
+    tip?: number
 ): Promise<GiftCardPaymentResponse> => {
     return fetchApi<GiftCardPaymentResponse>(`/api/orders/${orderId}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            payment_type: "gift_card",
+            payment_type: "GIFT_CARD",
             amount,
             giftCardCode,
+            tip,
         }),
     })
 }

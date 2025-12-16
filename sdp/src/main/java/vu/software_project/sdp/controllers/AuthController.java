@@ -11,10 +11,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.AuthenticationException;
-import vu.software_project.sdp.DTOs.LoginRequestDTO;
-import vu.software_project.sdp.DTOs.LogoutResponseDTO;
-import vu.software_project.sdp.DTOs.UserRegisterRequestDTO;
-import vu.software_project.sdp.DTOs.UserRegisterResponseDTO;
+import vu.software_project.sdp.DTOs.auth.LoginRequestDTO;
+import vu.software_project.sdp.DTOs.auth.LogoutResponseDTO;
+import vu.software_project.sdp.DTOs.auth.UserRegisterRequestDTO;
+import vu.software_project.sdp.DTOs.auth.UserRegisterResponseDTO;
 import vu.software_project.sdp.services.UserService;
 import vu.software_project.sdp.entities.User;
 
