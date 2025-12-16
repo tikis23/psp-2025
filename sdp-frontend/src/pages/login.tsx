@@ -67,7 +67,7 @@ const LoginPage = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" variant="outline">
+            <Button type="submit" className="w-full" >
               Login
             </Button>
           </form>

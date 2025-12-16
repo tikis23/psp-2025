@@ -11,6 +11,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -36,32 +37,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Enable CORS using the CorsConfigurationSource bean below
-                .cors(Customizer.withDefaults())
-                // Configure CSRF to use cookie-based token; ignore login/logout/register for
-                // simplicity
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**",
-                                "/api/gift-cards/**"))
-                // Session-based (cookie) authentication
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                // Authorization rules
-                .authorizeHttpRequests(auth -> auth
-                        // Always allow CORS preflight
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Public auth endpoints
-                        .requestMatchers("/api/login", "/api/logout", "/api/register").permitAll()
-                        // Example URL-based role restrictions (adjust as you add endpoints)
-                        .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
-                        .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
-                        .requestMatchers("/api/orders/**").permitAll()
-                        .requestMatchers("/api/gift-cards/**").permitAll()
-                        // Everything else requires authentication
-                        .anyRequest().authenticated())
-                // We are doing cookie/session auth, no HTTP Basic or Bearer
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .formLogin(form -> form.disable());
+            // Enable CORS using the CorsConfigurationSource bean below
+            .cors(Customizer.withDefaults())
+            // Configure CSRF to use cookie-based token; ignore login/logout/register for
+            // simplicity
+            .csrf(AbstractHttpConfigurer::disable)
+
+            // Session-based (cookie) authentication
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            // Authorization rules
+            .authorizeHttpRequests(auth -> auth
+                    // Always allow CORS preflight
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    // Public auth endpoints
+                    .requestMatchers("/api/login", "/api/logout", "/api/register").permitAll()
+                    // Example URL-based role restrictions (adjust as you add endpoints)
+                    .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")
+                    .requestMatchers("/api/owner/**").hasAnyRole("BUSINESS_OWNER", "SUPER_ADMIN")
+                    .requestMatchers("/api/orders/**").permitAll()
+                    .requestMatchers("/api/items/**").permitAll()
+                    .requestMatchers("/api/gift-cards/**").permitAll()
+                    // Everything else requires authentication
+                    .anyRequest().authenticated())
+            // We are doing cookie/session auth, no HTTP Basic or Bearer
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(form -> form.disable());
 
         return http.build();
     }

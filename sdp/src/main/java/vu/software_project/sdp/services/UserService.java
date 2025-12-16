@@ -5,8 +5,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vu.software_project.sdp.DTOs.LoginRequestDTO;
 import vu.software_project.sdp.DTOs.UserRegisterRequestDTO;
+import vu.software_project.sdp.DTOs.users.UserCreateDTO;
 import vu.software_project.sdp.entities.User;
 import vu.software_project.sdp.repositories.UserRepository;
 
@@ -47,4 +47,19 @@ public class UserService {
         }
         return user;
     }
+
+    @Transactional
+    public User createNewUser(UserCreateDTO userCreateDTO) {
+        if (userRepository.existsByEmail(userCreateDTO.getEmail())) {
+            throw new IllegalArgumentException("User with this email already exists");
+        }
+        User user = new User();
+        user.setEmail(userCreateDTO.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(userCreateDTO.getPassword()));
+        user.setRole(User.Role.valueOf(userCreateDTO.getRole()));
+        user.setName(userCreateDTO.getName());
+        user.setMerchantId(userCreateDTO.getMerchantId());
+        return userRepository.save(user);
+    }
+
 }
