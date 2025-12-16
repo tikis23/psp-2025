@@ -65,3 +65,16 @@ export interface VariationCreateRequest {
   name: string
   priceOffset: number
 }
+
+export interface GiftCard {
+  code: string
+  initialBalance: number
+  currentBalance: number
+  active: boolean
+  createdAt: string
+  expiryDate?: string | null
+}
+
+export interface GiftCardCreateRequest {
+  amount: number
+}

@@ -4,9 +4,9 @@ import { NavLink } from "react-router-dom"
 import { Button } from "./button";
 
 const NAV_ROUTES = [
-    { to: "/home", label: "Home" },
-    { to: "/payments", label: "Payments" },
+    { to: "/home", label: "Orders" },
     { to: "/items", label: "Items" },
+    { to: "/giftcards", label: "Gift Cards" },
     { to: "/admin", label: "Admin" },
 ];
 

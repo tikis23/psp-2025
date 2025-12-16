@@ -13,5 +13,6 @@ public class PaymentInfoDTO {
     private Payment.PaymentType type;
     private Payment.Status status;
     private BigDecimal amount;
+    private BigDecimal cashReceived;
     private BigDecimal tip;
 }
