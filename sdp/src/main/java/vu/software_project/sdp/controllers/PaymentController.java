@@ -6,9 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vu.software_project.sdp.DTOs.payments.*;
-import vu.software_project.sdp.DTOs.payments.cash.CashPaymentResponseDTO;
-import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentRequestDTO;
-import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentResponseDTO;
 import vu.software_project.sdp.services.PaymentService;
 
 @RestController
@@ -25,29 +22,20 @@ public class PaymentController {
     ) {
         String type = request.getPaymentType();
         if (type == null) {
-            return ResponseEntity.badRequest()
-                    .body("payment_type is required (CASH, GIFT_CARD, ...)");
+            return ResponseEntity.badRequest().body("payment_type is required (CASH, GIFT_CARD, ...)");
         }
 
-        switch (type.toUpperCase()) {
-            case "CASH" -> {
-                CashPaymentResponseDTO response =
-                        paymentService.createCashPayment(orderId, request);
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
-            }
-            case "GIFT_CARD" -> {
-                GiftCardPaymentRequestDTO gcReq = new GiftCardPaymentRequestDTO();
-                gcReq.setAmount(request.getAmount());
-                gcReq.setGiftCardCode(request.getGiftCardCode());
+        return switch (type.toUpperCase()) {
+            case "CASH" -> ResponseEntity.status(HttpStatus.CREATED)
+                    .body(paymentService.createCashPayment(orderId, request));
 
-                GiftCardPaymentResponseDTO response =
-                        paymentService.createGiftCardPayment(orderId, gcReq);
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
-            }
-            default -> {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Unsupported payment_type: " + type);
-            }
-        }
+            case "GIFT_CARD" -> ResponseEntity.status(HttpStatus.CREATED)
+                    .body(paymentService.createGiftCardPayment(orderId, request));
+
+            default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Unsupported payment_type: " + type);
+        };
     }
 }
+
+

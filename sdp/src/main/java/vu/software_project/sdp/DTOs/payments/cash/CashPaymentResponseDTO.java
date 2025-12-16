@@ -1,8 +1,6 @@
 package vu.software_project.sdp.DTOs.payments.cash;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -13,7 +11,6 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CashPaymentResponseDTO {
-
     private String id;
     private String orderId;
     private String paymentType;
@@ -22,4 +19,5 @@ public class CashPaymentResponseDTO {
     private OffsetDateTime createdAt;
     private BigDecimal remainingBalance;
     private BigDecimal tip;
+    private BigDecimal changeDue;
 }
