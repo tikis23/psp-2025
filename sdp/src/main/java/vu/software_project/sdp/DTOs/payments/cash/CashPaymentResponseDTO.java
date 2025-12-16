@@ -15,6 +15,7 @@ public class CashPaymentResponseDTO {
     private String orderId;
     private String paymentType;
     private BigDecimal amount;
+    private BigDecimal cashReceived;
     private String status;
     private OffsetDateTime createdAt;
     private BigDecimal remainingBalance;

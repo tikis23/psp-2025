@@ -8,11 +8,12 @@ import type { Order } from "@/services/orderService"
 
 export interface PaymentOverlayProps {
     order: Order
+    onPaid?: (data?: { changeDue?: number }) => void
 }
 
 type PaymentMethod = "CASH" | "CARD" | "GIFT_CARD"
 
-const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order }) => {
+const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
     const [method, setMethod] = useState<PaymentMethod>("CASH")
 
     const [amount, setAmount] = useState("")
@@ -51,10 +52,17 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order }) => {
 
         try {
             setIsSubmitting(true)
+
             const res = await createCashPayment(order.id.toString(), numericAmount, numericTip)
 
+            onPaid?.({
+                changeDue: Number(res.changeDue ?? 0),
+            })
+
             toast.success("Cash payment recorded", {
-                description: `Paid ${res.amount.toFixed(2)}. Change: ${res.changeDue.toFixed(2)}`,
+                description: `Paid ${Number(res.amount ?? 0).toFixed(2)}. Cash received: ${Number(
+                    res.cashReceived ?? numericAmount
+                ).toFixed(2)}. Change: ${Number(res.changeDue ?? 0).toFixed(2)}`,
             })
 
             setAmount("")
@@ -77,14 +85,13 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order }) => {
 
         try {
             setIsSubmitting(true)
-            const res = await createGiftCardPayment(
-                order.id.toString(),
-                giftCardCode.trim(),
-                numericTip
-            )
+            const res = await createGiftCardPayment(order.id.toString(), giftCardCode.trim(), numericTip)
+
+            onPaid?.({ changeDue: 0 })
 
             toast.success("Gift card payment recorded", {
-                description: `Charged ${res.amount.toFixed(2)} from card ${res.giftCardCode}. Card remaining: ${res.remainingCardBalance.toFixed(2)}`,
+                description: `Charged ${Number(res.amount ?? 0).toFixed(2)} from card ${res.giftCardCode
+                    }. Card remaining: ${Number(res.remainingCardBalance ?? 0).toFixed(2)}`,
             })
 
             setAmount("")
@@ -153,17 +160,14 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order }) => {
                     <div className="grid gap-4 sm:grid-cols-2">
                         {method === "CASH" && (
                             <div className="space-y-1 sm:col-span-2">
-                                <label className="text-sm font-medium">
-                                    Amount
-                                    <span className="text-xs text-gray-500">
-                                    </span>
-                                </label>
+                                <label className="text-sm font-medium">Cash received</label>
                                 <Input
                                     type="number"
                                     step="0.01"
                                     placeholder="e.g. 25.00"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
+                                    disabled={isSubmitting}
                                 />
                             </div>
                         )}
@@ -196,10 +200,7 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order }) => {
                     </div>
 
                     <div className="flex justify-end">
-                        <Button
-                            onClick={primaryAction}
-                            disabled={isSubmitting || method === "CARD"}
-                        >
+                        <Button onClick={primaryAction} disabled={isSubmitting || method === "CARD"}>
                             {method === "CASH" && "Take Cash payment"}
                             {method === "GIFT_CARD" && "Take Gift Card payment"}
                             {method === "CARD" && "Take Card payment"}

@@ -51,6 +51,7 @@ public class PaymentService {
         payment.setOrderId(orderId);
         payment.setPaymentType(PaymentType.CASH);
         payment.setAmount(amountApplied);
+        payment.setCashReceived(amountReceived);
         payment.setTip(request.getTip() != null ? request.getTip() : BigDecimal.ZERO);
         payment.setStatus(Status.SUCCEEDED);
         payment.setCreatedAt(now);
@@ -67,6 +68,7 @@ public class PaymentService {
                 .orderId(orderId.toString())
                 .paymentType("CASH")
                 .amount(payment.getAmount())
+                .cashReceived(payment.getCashReceived())
                 .status(payment.getStatus().name().toLowerCase())
                 .createdAt(payment.getCreatedAt())
                 .remainingBalance(remainingAfter)

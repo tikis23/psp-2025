@@ -15,6 +15,7 @@ export interface CashPaymentResponse {
     orderId: string
     payment_type: PaymentType
     amount: number
+    cashReceived?: number
     status: string
     createdAt: string
     remainingBalance: number
