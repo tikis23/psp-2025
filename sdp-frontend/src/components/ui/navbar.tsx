@@ -5,6 +5,7 @@ const NAV_ROUTES = [
     { to: "/home", label: "Home" },
     { to: "/payments", label: "Payments" },
     { to: "/items", label: "Items" },
+    { to: "/reservations", label: "Reservations"}
 ];
 
 const NavBar = () => {
