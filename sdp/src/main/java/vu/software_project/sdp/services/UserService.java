@@ -5,7 +5,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vu.software_project.sdp.DTOs.UserRegisterRequestDTO;
+import vu.software_project.sdp.DTOs.auth.UserRegisterRequestDTO;
 import vu.software_project.sdp.DTOs.users.UserCreateDTO;
 import vu.software_project.sdp.entities.User;
 import vu.software_project.sdp.repositories.UserRepository;
