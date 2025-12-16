@@ -1,13 +1,18 @@
 
+import { useAuth } from "@/contexts/auth-context";
 import { NavLink } from "react-router-dom"
+import { Button } from "./button";
 
 const NAV_ROUTES = [
     { to: "/home", label: "Orders" },
     { to: "/items", label: "Items" },
     { to: "/giftcards", label: "Gift Cards" },
+    { to: "/admin", label: "Admin" },
 ];
 
 const NavBar = () => {
+    const {logout} = useAuth();
+
     return (
         <header className="w-full border-b bg-white">
             <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
@@ -29,6 +34,9 @@ const NavBar = () => {
                         </NavLink>
                     ))}
                 </nav>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                    Logout
+                </Button>
             </div>
         </header>
     )

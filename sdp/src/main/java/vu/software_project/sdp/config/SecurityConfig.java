@@ -11,6 +11,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -40,9 +41,7 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             // Configure CSRF to use cookie-based token; ignore login/logout/register for
             // simplicity
-            .csrf(csrf -> csrf
-                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                    .ignoringRequestMatchers("/api/login", "/api/logout", "/api/register", "/api/orders/**", "/api/gift-cards/**", "/api/reservations/**", "/api/items/**", "/api/finance/**"))
+            .csrf(AbstractHttpConfigurer::disable)
 
             // Session-based (cookie) authentication
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
