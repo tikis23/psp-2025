@@ -24,13 +24,15 @@ export default function GiftCardsPage() {
     })
 
     useEffect(() => {
+        if (!user?.merchantId) return
         loadGiftCards()
-    }, [])
+    }, [user])
 
     const handleDeleteGiftCard = async (code: string) => {
         setIsLoading(true)
         try {
-            await deleteGiftCardApi(code)
+            if (!user?.merchantId) return
+            await deleteGiftCardApi(code, user.merchantId)
             toast.success("Gift card deleted")
             loadGiftCards()
         } catch (err: any) {
@@ -45,7 +47,8 @@ export default function GiftCardsPage() {
     const loadGiftCards = async () => {
         setIsLoading(true)
         try {
-            const data = await getAllGiftCards()
+            if (!user?.merchantId) return
+            const data = await getAllGiftCards(user.merchantId)
             setGiftCards(data)
         } catch (err: any) {
             console.error(err)
@@ -67,7 +70,8 @@ export default function GiftCardsPage() {
 
         setIsCreating(true)
         try {
-            const created = await createGiftCard(newGiftCard)
+            if (!user?.merchantId) return
+            const created = await createGiftCard(newGiftCard, user.merchantId)
             toast.success("Gift card created", { description: created.code })
             setNewGiftCard({ amount: 0 })
             loadGiftCards()
@@ -117,7 +121,7 @@ export default function GiftCardsPage() {
                         </div>
                     </div>
 
-                    <Button type="submit" disabled={isCreating} className="w-full">
+                    <Button type="submit" disabled={isCreating} className="w-full text-white">
                         {isCreating ? "Creating..." : "Create Gift Card"}
                     </Button>
                 </form>
@@ -142,8 +146,8 @@ export default function GiftCardsPage() {
                                             <h3 className="font-semibold text-lg">{gc.code}</h3>
                                             <span
                                                 className={`px-2 py-1 text-xs rounded-full ${gc.active
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-gray-200 text-gray-700"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : "bg-gray-200 text-gray-700"
                                                     }`}
                                             >
                                                 {gc.active ? "Active" : "Inactive"}
@@ -178,6 +182,7 @@ export default function GiftCardsPage() {
                                         variant="destructive"
                                         type="button"
                                         size="sm"
+                                        className="text-white"
                                         onClick={async () => {
                                             try {
                                                 await handleDeleteGiftCard(gc.code)

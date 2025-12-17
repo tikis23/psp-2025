@@ -8,10 +8,11 @@ const NAV_ROUTES = [
     { to: "/items", label: "Items" },
     { to: "/giftcards", label: "Gift Cards" },
     { to: "/admin", label: "Admin" },
+    { to: "/refunds", label: "Refunds" },
 ];
 
 const NavBar = () => {
-    const {logout} = useAuth();
+    const { logout } = useAuth();
 
     return (
         <header className="w-full border-b bg-white">

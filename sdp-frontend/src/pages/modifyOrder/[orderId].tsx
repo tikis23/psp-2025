@@ -16,9 +16,11 @@ import { getAllItems } from "@/services/itemService"
 import type { Item } from "@/types"
 import PaymentOverlay from "@/components/orders/paymentOverlay"
 import ReceiptOverlay from "@/components/orders/receiptOverlay"
+import { useAuth } from "@/contexts/auth-context"
 
 const ModifyOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>()
+  const { user } = useAuth()
 
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [availableItems, setAvailableItems] = useState<Item[]>([])
@@ -46,7 +48,8 @@ const ModifyOrderPage = () => {
         console.error("Error fetching order:", error)
       })
 
-    getAllItems()
+    if (!user?.merchantId) return
+    getAllItems(user.merchantId)
       .then((items) => setAvailableItems(items))
       .catch((error) => {
         toast.error("Failed to load available items. Please try again.")
