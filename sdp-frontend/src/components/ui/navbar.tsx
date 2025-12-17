@@ -8,6 +8,7 @@ const NAV_ROUTES = [
     { to: "/items", label: "Items" },
     { to: "/giftcards", label: "Gift Cards" },
     { to: "/admin", label: "Admin" },
+    { to: "/reservations", label: "Reservations"}
 ];
 
 const NavBar = () => {
