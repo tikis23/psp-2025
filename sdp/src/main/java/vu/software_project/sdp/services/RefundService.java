@@ -26,12 +26,12 @@ public class RefundService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("ORDER_NOT_FOUND"));
 
-        if (order.getStatus() != Order.Status.PAID) {
-            throw new IllegalStateException("ORDER_NOT_PAID");
-        }
-
         if (order.getStatus() == Order.Status.REFUNDED) {
             throw new IllegalStateException("ORDER_ALREADY_REFUNDED");
+        }
+
+        if (order.getStatus() != Order.Status.PAID) {
+            throw new IllegalStateException("ORDER_NOT_PAID");
         }
 
         List<Payment> payments = paymentRepository.findByOrderId(orderId);
