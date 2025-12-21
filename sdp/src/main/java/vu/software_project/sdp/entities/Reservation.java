@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reservations")
@@ -22,13 +22,18 @@ public class Reservation {
     @Column(nullable = false)
     private Long serviceId;
 
+    private Long employeeId;
+
     @Column(nullable = false)
     private String customerName;
 
     private String customerContact;
 
     @Column(nullable = false)
-    private OffsetDateTime appointmentTime;
+    private LocalDateTime appointmentTime;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

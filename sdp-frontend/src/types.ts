@@ -1,82 +1,83 @@
 export interface User {
-  name: string
-  email: string
-  role: string
-  merchantId?: number
+    id: number
+    name: string
+    email: string
+    role: string
+    merchantId?: number
 }
 
 export interface AuthContextType {
-  isAuthenticated: boolean
-  user: User | null
-  isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  checkAuthStatus: () => Promise<void>
-  changePassword: (
-    oldPassword: string,
-    newPassword: string,
-    username: string
-  ) => Promise<void>
+    isAuthenticated: boolean
+    user: User | null
+    isLoading: boolean
+    login: (username: string, password: string) => Promise<void>
+    logout: () => Promise<void>
+    checkAuthStatus: () => Promise<void>
+    changePassword: (
+        oldPassword: string,
+        newPassword: string,
+        username: string
+    ) => Promise<void>
 }
 
 export interface LocationState {
-  from?: {
-    pathname: string
-  }
+    from?: {
+        pathname: string
+    }
 }
 
 export interface Merchant {
-  id: number
-  name: string
-  address: string
-  contactInfo: string
-  ownerId: number
+    id: number
+    name: string
+    address: string
+    contactInfo: string
+    ownerId: number
 }
 
 export interface ProductVariation {
-  id: number
-  name: string
-  priceOffset: number
+    id: number
+    name: string
+    priceOffset: number
 }
 
 export interface Item {
-  id: number
-  name: string
-  price: number
-  type: "PRODUCT" | "SERVICE_ITEM"
-  taxRateId?: string
-  variations?: ProductVariation[] | null
+    id: number
+    name: string
+    price: number
+    type: "PRODUCT" | "SERVICE_ITEM"
+    taxRateId?: string
+    variations?: ProductVariation[] | null
 }
 
 export interface ItemCreateRequest {
-  name: string
-  price: number
-  type: "PRODUCT" | "SERVICE_ITEM"
-  taxRateId?: string
+    name: string
+    price: number
+    type: "PRODUCT" | "SERVICE_ITEM"
+    taxRateId?: string
 }
 
 export interface ItemUpdateRequest {
-  name: string
-  price: number
-  taxRateId?: string
+    name: string
+    price: number
+    taxRateId?: string
 }
 
 export interface VariationCreateRequest {
-  name: string
-  priceOffset: number
+    name: string
+    priceOffset: number
 }
 
 export interface GiftCard {
-  code: string
-  initialBalance: number
-  currentBalance: number
-  active: boolean
-  createdAt: string
-  expiryDate?: string | null
+    code: string
+    initialBalance: number
+    currentBalance: number
+    active: boolean
+    createdAt: string
+    expiryDate?: string | null
 }
 
 export interface GiftCardCreateRequest {
-  amount: number
+    amount: number
 }
 
 export interface Discount {
@@ -93,14 +94,19 @@ export interface Reservation {
     id: number
     serviceId: number
     serviceName: string
+    employeeId?: number
+    employeeName?: string
     customerName: string
     customerContact: string
     appointmentTime: string
+    bookedAt: string
     status: "CONFIRMED" | "CANCELLED"
 }
 
 export interface ReservationCreateRequest {
+    merchantId: number
     serviceId: number
+    employeeId?: number
     customerName: string
     customerContact: string
     appointmentTime: string
