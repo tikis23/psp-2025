@@ -13,6 +13,6 @@ public class OrderItemDTO {
     private String name;
     private Long quantity;
     private BigDecimal price;
-    // private Long taxRateId;
     private List<OrderItemVariationDTO> variations;
+    private BigDecimal appliedDiscountAmount;
 }

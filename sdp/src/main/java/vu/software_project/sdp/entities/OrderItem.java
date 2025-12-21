@@ -30,16 +30,23 @@ public class OrderItem {
 
     @Column(nullable = false)
     private Long itemId;
-    
-    @Column(nullable = false)
-    private Long taxRateId;
+
+    private String taxRateId;
+
+    @Column(precision = 10, scale = 4)
+    private BigDecimal appliedTaxRate = BigDecimal.ZERO;
+
+    private String discountId;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal appliedDiscountAmount = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemVariation> variations = new ArrayList<>();
-    
+
     @Column(nullable = false)
     private BigDecimal price;
-    
+
     @Column(nullable = false)
     private Long quantity;
 

@@ -12,59 +12,219 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { getAllMerchants, getMerchantUsers, createMerchant } from "@/services/merchantService"
 import { createNewUser } from "@/services/userService"
-import type { Merchant, User } from "@/types"
+import { getTaxRates, createTaxRate, deleteTaxRate } from "@/services/taxService"
+import { getDiscounts, createDiscount, deleteDiscount } from "@/services/discountService"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type { Merchant, User, TaxRate, Discount } from "@/types"
 import { useEffect, useState } from "react"
 
 const AdminPage = () => {
     const { user } = useAuth()
 
     const [merchants, setMerchants] = useState<Merchant[]>([])
+    const [taxes, setTaxes] = useState<TaxRate[]>([])
+    const [discounts, setDiscounts] = useState<Discount[]>([])
 
-    // Redirect unauthenticated
     useEffect(() => {
         if (user === null) {
             window.location.href = "/login"
         }
     }, [user])
 
-    // Fetch merchants
     useEffect(() => {
         if (!user || user.role !== "SUPER_ADMIN") return
         getAllMerchants().then(setMerchants)
     }, [user])
 
+    useEffect(() => {
+        if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "BUSINESS_OWNER")) return
+        const mid = user.merchantId || 1
+        getTaxRates(mid).then(setTaxes)
+        getDiscounts(mid).then(setDiscounts)
+    }, [user])
+
     if (user === undefined) return null
-    if (user?.role !== "SUPER_ADMIN") return <AccessDenied />
+    if (user?.role !== "SUPER_ADMIN" && user?.role !== "BUSINESS_OWNER") return <AccessDenied />
+
+    const merchantId = user.merchantId || 1
 
     return (
-        <div className="w-full flex flex-col items-center gap-y-4">
-            <div className="text-3xl font-semibold mb-4">Merchants</div>
+        <div className="w-full flex flex-col items-center gap-y-12 py-10 px-4">
+            {user.role === "SUPER_ADMIN" && (
+                <div className="flex flex-col items-center gap-y-4 w-full">
+                    <div className="text-3xl font-semibold mb-4">Merchants</div>
+                    <div className="flex flex-col w-full max-w-md gap-4">
+                        {merchants.map((merchant) => (
+                            <MerchantUsersDialog
+                                key={merchant.id}
+                                merchant={merchant}
+                            />
+                        ))}
+                    </div>
+                    <CreateMerchantDialog onSubmitCallback={async (e, name, address, contactInfo) => {
+                        e.preventDefault()
+                        try {
+                            const newMerchant = await createMerchant({ name, address, contactInfo })
+                            setMerchants((prev) => [...prev, newMerchant])
+                        } catch (error) {
+                            console.error("Failed to create merchant:", error)
+                        }
+                    }} />
+                </div>
+            )}
 
-            <div className="flex flex-col w-1/6 gap-4">
-                {merchants.map((merchant) => (
-                    <MerchantUsersDialog
-                        key={merchant.id}
-                        merchant={merchant}
-                    />
-                ))}
+            <div className="flex flex-col items-center gap-y-4 w-full border-t pt-10">
+                <div className="text-3xl font-semibold mb-4">Tax Management</div>
+                <div className="flex flex-col w-full max-w-2xl gap-2">
+                    {taxes.map((tax) => (
+                        <div key={tax.id} className="flex justify-between items-center border p-4 rounded-lg bg-white shadow-sm">
+                            <div>
+                                <div className="font-medium text-lg">{tax.name}</div>
+                                <div className="text-sm text-gray-500">Rate: {(tax.rate * 100).toFixed(2)}%</div>
+                            </div>
+                            <Button variant="destructive" size="sm" onClick={() => deleteTaxRate(tax.id).then(() => setTaxes(t => t.filter(x => x.id !== tax.id)))}>
+                                Delete
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <CreateTaxDialog onCreated={(newTax) => setTaxes([...taxes, newTax])} merchantId={merchantId} />
             </div>
 
-            <CreateMerchantDialog onSubmitCallback={async (e, name, address, contactInfo) => {
-                e.preventDefault()
-                try {
-                    const newMerchant = await createMerchant({ name, address, contactInfo })
-                    setMerchants((prev) => [...prev, newMerchant])
-                } catch (error) {
-                    console.error("Failed to create merchant:", error)
-                }
-            }} />
+            <div className="flex flex-col items-center gap-y-4 w-full border-t pt-10">
+                <div className="text-3xl font-semibold mb-4">Discount Management</div>
+                <div className="flex flex-col w-full max-w-2xl gap-2">
+                    {discounts.map((discount) => (
+                        <div key={discount.id} className="flex justify-between items-center border p-4 rounded-lg bg-white shadow-sm">
+                            <div>
+                                <div className="font-medium text-lg">{discount.code}</div>
+                                <div className="text-sm text-gray-500">
+                                    {discount.value} {discount.type === "PERCENTAGE" ? "%" : "Fixed Amount"} — {discount.scope} scope
+                                </div>
+                            </div>
+                            <Button variant="destructive" size="sm" onClick={() => deleteDiscount(discount.id).then(() => setDiscounts(d => d.filter(x => x.id !== discount.id)))}>
+                                Delete
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <CreateDiscountDialog onCreated={(newDiscount) => setDiscounts([...discounts, newDiscount])} merchantId={merchantId} />
+            </div>
         </div>
     )
 }
 
+function CreateTaxDialog({ onCreated, merchantId }: { onCreated: (tax: TaxRate) => void, merchantId: number }) {
+    const [name, setName] = useState("")
+    const [rate, setRate] = useState("")
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        try {
+            const tax = await createTaxRate({ name, rate: parseFloat(rate) / 100 }, merchantId)
+            onCreated(tax)
+            setName("")
+            setRate("")
+        } catch (error) {
+            console.error("Failed to create tax rate:", error)
+        }
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild><Button variant="outline">Create New Tax</Button></DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create Tax Rate</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Tax Name</Label>
+                        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. VAT" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Rate (%)</Label>
+                        <Input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="e.g. 21" required />
+                    </div>
+                    <DialogFooter><Button type="submit">Save Tax Rate</Button></DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function CreateDiscountDialog({ onCreated, merchantId }: { onCreated: (discount: Discount) => void, merchantId: number }) {
+    const [code, setCode] = useState("")
+    const [value, setValue] = useState("")
+    const [type, setType] = useState<"PERCENTAGE" | "FIXED_AMOUNT">("PERCENTAGE")
+    const [scope, setScope] = useState<"ORDER" | "PRODUCT">("ORDER")
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        try {
+            const discount = await createDiscount({
+                code,
+                value: parseFloat(value),
+                type,
+                scope
+            }, merchantId)
+            onCreated(discount)
+            setCode("")
+            setValue("")
+        } catch (error) {
+            console.error("Failed to create discount:", error)
+        }
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild><Button variant="outline">Create New Discount</Button></DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create Discount</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Code</Label>
+                        <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SUMMER20" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Value</Label>
+                        <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="10" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Type</Label>
+                        <Select onValueChange={(v: any) => setType(v)} defaultValue={type}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                                <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Scope</Label>
+                        <Select onValueChange={(v: any) => setScope(v)} defaultValue={scope}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ORDER">Whole Order</SelectItem>
+                                <SelectItem value="PRODUCT">Specific Product</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter><Button type="submit">Save Discount</Button></DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function MerchantUsersDialog({
-    merchant,
-}: {
+                                 merchant,
+                             }: {
     merchant: Merchant
 }) {
     const [users, setUsers] = useState<User[]>([])
@@ -95,9 +255,12 @@ function MerchantUsersDialog({
                     <div className="text-gray-600">No users found for this merchant.</div>
                 )}
 
-                {users?.map((user) => (
-                    <UserEntry key={user.email} user={user} />
-                ))}
+                <div className="flex flex-col gap-y-3">
+                    {users?.map((user) => (
+                        <UserEntry key={user.email} user={user} />
+                    ))}
+                </div>
+
                 <DialogFooter>
                     <CreateUserDialog
                         onSubmitCallback={
@@ -124,6 +287,7 @@ function UserEntry({ user }: { user: User }) {
         <div className="border-b pb-2">
             <div className="font-medium">{user.name}</div>
             <div className="text-sm text-gray-600">{user.email}</div>
+            <div className="text-xs text-gray-400 font-mono mt-1">{user.role}</div>
         </div>
     )
 }
@@ -141,4 +305,4 @@ function AccessDenied() {
     )
 }
 
-export default AdminPage    
+export default AdminPage

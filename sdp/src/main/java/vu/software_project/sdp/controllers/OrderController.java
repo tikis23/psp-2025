@@ -1,6 +1,7 @@
 package vu.software_project.sdp.controllers;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,5 +99,22 @@ public class OrderController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
         }
+    }
+
+    @PostMapping("/{id}/discount")
+    public ResponseEntity<OrderDTO> applyOrderDiscount(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload) {
+        String code = payload.get("code");
+        return ResponseEntity.ok(orderService.applyOrderDiscount(id, code));
+    }
+
+    @PostMapping("/{id}/items/{itemId}/discount")
+    public ResponseEntity<OrderDTO> applyItemDiscount(
+            @PathVariable Long id,
+            @PathVariable Long itemId,
+            @RequestBody Map<String, String> payload) {
+        String code = payload.get("code");
+        return ResponseEntity.ok(orderService.applyItemDiscount(id, itemId, code));
     }
 }
