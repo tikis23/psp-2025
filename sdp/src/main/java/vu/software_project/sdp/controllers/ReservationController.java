@@ -5,8 +5,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vu.software_project.sdp.DTOs.reservation.ReservationCreateRequestDto;
-import vu.software_project.sdp.DTOs.reservation.ReservationResponseDto;
+import vu.software_project.sdp.DTOs.reservations.ReservationCreateRequestDto;
+import vu.software_project.sdp.DTOs.reservations.ReservationResponseDto;
 import vu.software_project.sdp.services.ReservationService;
 
 import java.time.LocalDate;
