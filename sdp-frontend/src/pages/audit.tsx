@@ -53,6 +53,8 @@ const AuditPage = () => {
 
     if (user === undefined) return null
 
+    if (user?.role !== "BUSINESS_OWNER") return <InsufficientPrivileges />
+
     return (
         <div className="w-full flex flex-col items-center gap-y-4">
             <div className="text-3xl font-semibold mb-4">Audit Logs</div>
@@ -161,6 +163,15 @@ function AuditLogCard({ log }: { log: AuditLogEntry }) {
                 <CardDescription>{log.actorName} - {dateString}</CardDescription>
             </CardHeader>
         </Card>
+    )
+}
+
+function InsufficientPrivileges() {
+    return (
+        <div className="w-full flex flex-col items-center gap-y-4">
+            <div className="text-3xl font-semibold mb-4">Audit Logs</div>
+            <div>You do not have sufficient privileges to view audit logs.</div>
+        </div>
     )
 }
 

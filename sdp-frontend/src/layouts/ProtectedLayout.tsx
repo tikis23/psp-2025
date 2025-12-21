@@ -1,16 +1,12 @@
 import { LoadingScreen } from "@/components/loading-screen";
 import { useAuth } from "@/contexts/auth-context";
 import React from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import NavBar from "@/components/ui/navbar";
 
 const ProtectedLayout: React.FC = () => {
-  // Here you can add any layout-specific logic, such as checking authentication status
-  // or fetching user data if needed.
 
-  const location = useLocation();
-
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />

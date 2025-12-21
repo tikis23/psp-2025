@@ -18,7 +18,7 @@ import java.util.Map;
 public class ActionLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
     @Column(name = "actor_user_id")

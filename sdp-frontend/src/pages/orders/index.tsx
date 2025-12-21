@@ -55,7 +55,7 @@ const OrdersPage = () => {
                                         <td className="border px-4 py-2 text-center">
                                             <Button
                                                 className="flex-1"
-                                                onClick={() => navigate(`/modifyOrder/${order.id}`)}
+                                                onClick={() => navigate(`/orders/${order.id}`)}
                                             >
                                                 {
                                                     order.status === "OPEN" ? "Modify" : "View"
