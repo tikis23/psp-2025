@@ -1,10 +1,17 @@
-import { fetchApi } from "./fetchClient"
-import type {Reservation, ReservationCreateRequest} from "@/types.ts";
+import { fetchApi } from "./fetchClient";
+import type { Reservation, ReservationCreateRequest } from "@/types.ts";
 
-export const getAllReservations = (date?: string): Promise<Reservation[]> => {
-    const query = date ? `?date=${date}` : "";
-    return fetchApi<Reservation[]>(`/api/reservations${query}`, { method: "GET" })
-}
+export const getAllReservations = (merchantId: number, date?: string): Promise<Reservation[]> => {
+    const params = new URLSearchParams();
+    params.append("merchantId", merchantId.toString());
+    if (date) {
+        params.append("date", date);
+    }
+
+    return fetchApi<Reservation[]>(`/api/reservations?${params.toString()}`, {
+        method: "GET"
+    });
+};
 
 export const createReservation = (
     data: ReservationCreateRequest
@@ -13,8 +20,8 @@ export const createReservation = (
         method: "POST",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },
-    })
-}
+    });
+};
 
 export const updateReservation = (
     id: number,
@@ -24,9 +31,11 @@ export const updateReservation = (
         method: "PUT",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },
-    })
-}
+    });
+};
 
-export const cancelReservation = (id: number): Promise<void> => {
-    return fetchApi<void>(`/api/reservations/${id}`, { method: "DELETE" })
-}
+export const cancelReservation = (id: number, merchantId: number): Promise<void> => {
+    return fetchApi<void>(`/api/reservations/${id}?merchantId=${merchantId}`, {
+        method: "DELETE"
+    });
+};

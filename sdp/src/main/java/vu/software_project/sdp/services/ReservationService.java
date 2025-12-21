@@ -8,13 +8,14 @@ import vu.software_project.sdp.DTOs.reservations.ReservationResponseDto;
 import vu.software_project.sdp.entities.Reservation;
 import vu.software_project.sdp.entities.Reservation.Status;
 import vu.software_project.sdp.entities.ServiceItem;
+import vu.software_project.sdp.entities.User;
 import vu.software_project.sdp.repositories.ReservationRepository;
 import vu.software_project.sdp.repositories.ServiceItemRepository;
+import vu.software_project.sdp.repositories.UserRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,33 +25,27 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final ServiceItemRepository serviceItemRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ReservationResponseDto createReservation(ReservationCreateRequestDto request, Long merchantId) {
-        if (request.getAppointmentTime().isBefore(OffsetDateTime.now())) {
+        if (request.getAppointmentTime().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Cannot book appointments in the past");
-        }
-
-        String serviceName = "Unknown Service";
-
-        // TODO: Will replace later - allowing invalid or dummy service ID for now
-        if (request.getServiceId() != null) {
-            serviceName = serviceItemRepository.findByIdAndMerchantId(request.getServiceId(), merchantId)
-                    .map(ServiceItem::getName)
-                    .orElse("Unknown Service");
         }
 
         Reservation reservation = new Reservation();
         reservation.setMerchantId(merchantId);
         reservation.setServiceId(request.getServiceId());
+        reservation.setEmployeeId(request.getEmployeeId());
         reservation.setCustomerName(request.getCustomerName());
         reservation.setCustomerContact(request.getCustomerContact());
         reservation.setAppointmentTime(request.getAppointmentTime());
+        reservation.setCreatedAt(LocalDateTime.now());
         reservation.setStatus(Status.CONFIRMED);
 
         Reservation saved = reservationRepository.save(reservation);
 
-        return mapToDto(saved, serviceName);
+        return mapToDto(saved);
     }
 
     @Transactional
@@ -66,44 +61,26 @@ public class ReservationService {
             throw new IllegalArgumentException("Only confirmed reservations can be modified");
         }
 
-        if (request.getAppointmentTime().isBefore(OffsetDateTime.now())) {
-            throw new IllegalArgumentException("Cannot reschedule to the past");
-        }
-
-        String serviceName = "Unknown Service";
-        if (request.getServiceId() != null) {
-            serviceName = serviceItemRepository.findByIdAndMerchantId(request.getServiceId(), merchantId)
-                    .map(ServiceItem::getName)
-                    .orElse("Unknown Service");
-        }
-
         reservation.setServiceId(request.getServiceId());
+        reservation.setEmployeeId(request.getEmployeeId());
         reservation.setCustomerName(request.getCustomerName());
         reservation.setCustomerContact(request.getCustomerContact());
         reservation.setAppointmentTime(request.getAppointmentTime());
 
         Reservation updated = reservationRepository.save(reservation);
-        return mapToDto(updated, serviceName);
+        return mapToDto(updated);
     }
 
     @Transactional(readOnly = true)
     public List<ReservationResponseDto> getAllReservations(Long merchantId, LocalDate date) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
 
-        OffsetDateTime start = targetDate.atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = targetDate.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC);
+        LocalDateTime start = targetDate.atStartOfDay();
+        LocalDateTime end = targetDate.atTime(LocalTime.MAX);
 
         return reservationRepository.findByMerchantIdAndAppointmentTimeBetweenOrderByAppointmentTimeAsc(merchantId, start, end)
                 .stream()
-                .map(res -> {
-                    String serviceName = "Unknown Service";
-                    if (res.getServiceId() != null) {
-                        serviceName = serviceItemRepository.findById(res.getServiceId())
-                                .map(ServiceItem::getName)
-                                .orElse("Unknown Service");
-                    }
-                    return mapToDto(res, serviceName);
-                })
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
@@ -120,14 +97,26 @@ public class ReservationService {
         reservationRepository.save(reservation);
     }
 
-    private ReservationResponseDto mapToDto(Reservation res, String serviceName) {
+    private ReservationResponseDto mapToDto(Reservation res) {
+        String serviceName = serviceItemRepository.findById(res.getServiceId())
+                .map(ServiceItem::getName)
+                .orElse("Unknown Service");
+
+        String employeeName = userRepository.findById(res.getEmployeeId())
+                .map(User::getName)
+                .orElse("Unknown Employee");
+
+
         return ReservationResponseDto.builder()
                 .id(res.getId())
                 .serviceId(res.getServiceId())
                 .serviceName(serviceName)
+                .employeeId(res.getEmployeeId())
+                .employeeName(employeeName)
                 .customerName(res.getCustomerName())
                 .customerContact(res.getCustomerContact())
                 .appointmentTime(res.getAppointmentTime())
+                .bookedAt(res.getCreatedAt())
                 .status(res.getStatus().name())
                 .build();
     }

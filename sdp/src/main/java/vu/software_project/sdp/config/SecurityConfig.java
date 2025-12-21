@@ -57,6 +57,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/orders/**").permitAll()
                     .requestMatchers("/api/items/**").permitAll()
                     .requestMatchers("/api/gift-cards/**").permitAll()
+                    .requestMatchers("/api/users/**").permitAll()
+
                     // Everything else requires authentication
                     .anyRequest().authenticated())
             // We are doing cookie/session auth, no HTTP Basic or Bearer

@@ -19,36 +19,33 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    // TODO: Get actual logged in user's merchant ID
-    private Long getMerchantId() {
-        return 1L;
-    }
-
     @PostMapping
     public ResponseEntity<ReservationResponseDto> createReservation(
             @RequestBody ReservationCreateRequestDto request) {
-        ReservationResponseDto response = reservationService.createReservation(request, getMerchantId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reservationService.createReservation(request, request.getMerchantId()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ReservationResponseDto> updateReservation(
             @PathVariable Long id,
             @RequestBody ReservationCreateRequestDto request) {
-        ReservationResponseDto response = reservationService.updateReservation(id, request, getMerchantId());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(reservationService.updateReservation(id, request, request.getMerchantId()));
     }
 
     @GetMapping
     public ResponseEntity<List<ReservationResponseDto>> getReservations(
+            @RequestParam Long merchantId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return ResponseEntity.ok(reservationService.getAllReservations(getMerchantId(), date));
+        return ResponseEntity.ok(reservationService.getAllReservations(merchantId, date));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
-        reservationService.cancelReservation(id, getMerchantId());
+    public ResponseEntity<Void> cancelReservation(
+            @PathVariable Long id,
+            @RequestParam Long merchantId) {
+        reservationService.cancelReservation(id, merchantId);
         return ResponseEntity.noContent().build();
     }
 }

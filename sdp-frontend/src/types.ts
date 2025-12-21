@@ -1,8 +1,9 @@
 export interface User {
-  name: string
-  email: string
-  role: string
-  merchantId?: number
+    id: number
+    name: string
+    email: string
+    role: string
+    merchantId?: number
 }
 
 export interface AuthContextType {
@@ -93,14 +94,19 @@ export interface Reservation {
     id: number
     serviceId: number
     serviceName: string
+    employeeId?: number
+    employeeName?: string
     customerName: string
     customerContact: string
     appointmentTime: string
+    bookedAt: string
     status: "CONFIRMED" | "CANCELLED"
 }
 
 export interface ReservationCreateRequest {
+    merchantId: number
     serviceId: number
+    employeeId?: number
     customerName: string
     customerContact: string
     appointmentTime: string

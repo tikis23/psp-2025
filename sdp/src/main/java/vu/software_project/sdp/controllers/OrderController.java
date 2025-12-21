@@ -52,7 +52,6 @@ public class OrderController {
     public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestBody String status, Authentication authentication) {
         try {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
             Order.Status orderStatus = Order.Status.valueOf(status.toUpperCase());
             OrderDTO updatedOrder = orderService.updateOrderStatus(orderId, orderStatus, userDetails.getId(), userDetails.getMerchantId());
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
