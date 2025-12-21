@@ -19,10 +19,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import vu.software_project.sdp.config.security.CustomUserDetails;
 import vu.software_project.sdp.entities.User;
 import vu.software_project.sdp.services.UserService;
 
@@ -96,10 +96,19 @@ public class SecurityConfig {
                 String email = authentication.getName();
                 String rawPassword = authentication.getCredentials().toString();
                 User user = userService.verifyAuthentication(email, rawPassword);
+                CustomUserDetails userDetails = new CustomUserDetails(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getName(),
+                        user.getMerchantId(),
+                        user.getPasswordHash(),
+                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                );
                 return new UsernamePasswordAuthenticationToken(
-                        email,
+                        userDetails,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                        userDetails.getAuthorities()
+                );
             }
 
             @Override
