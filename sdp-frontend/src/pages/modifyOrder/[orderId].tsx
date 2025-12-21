@@ -22,8 +22,6 @@ const ModifyOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>()
   const { user } = useAuth()
 
-  const { user } = useAuth()
-
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [availableItems, setAvailableItems] = useState<Item[]>([])
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false)
