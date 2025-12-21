@@ -1,21 +1,5 @@
 import { fetchApi } from "./fetchClient"
-
-export interface Reservation {
-    id: number
-    serviceId: number
-    serviceName: string
-    customerName: string
-    customerContact: string
-    appointmentTime: string
-    status: "CONFIRMED" | "CANCELLED"
-}
-
-export interface ReservationCreateRequest {
-    serviceId: number
-    customerName: string
-    customerContact: string
-    appointmentTime: string
-}
+import type {Reservation, ReservationCreateRequest} from "@/types.ts";
 
 export const getAllReservations = (date?: string): Promise<Reservation[]> => {
     const query = date ? `?date=${date}` : "";

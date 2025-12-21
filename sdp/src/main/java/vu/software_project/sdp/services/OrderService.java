@@ -1,30 +1,20 @@
 package vu.software_project.sdp.services;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import vu.software_project.sdp.DTOs.item.ItemResponseDTO;
-import vu.software_project.sdp.DTOs.orders.CreateOrderRequestDTO;
-import vu.software_project.sdp.DTOs.orders.OrderAddItemRequestDTO;
-import vu.software_project.sdp.DTOs.orders.OrderDTO;
-import vu.software_project.sdp.DTOs.orders.OrderInfoDTO;
-import vu.software_project.sdp.DTOs.orders.OrderItemDTO;
-import vu.software_project.sdp.DTOs.orders.OrderItemVariationDTO;
-import vu.software_project.sdp.DTOs.orders.PaymentInfoDTO;
-import vu.software_project.sdp.entities.Order;
-import vu.software_project.sdp.entities.OrderItem;
-import vu.software_project.sdp.entities.OrderItemVariation;
-import vu.software_project.sdp.entities.Payment;
-import vu.software_project.sdp.entities.ProductVariation;
-import vu.software_project.sdp.repositories.OrderRepository;
-import vu.software_project.sdp.repositories.PaymentRepository;
-import vu.software_project.sdp.repositories.ProductVariationRepository;
+import vu.software_project.sdp.DTOs.orders.*;
+import vu.software_project.sdp.entities.*;
+import vu.software_project.sdp.repositories.*;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +24,8 @@ public class OrderService {
     private final ProductService productService;
     private final PaymentRepository paymentRepository;
     private final ProductVariationRepository variationRepository;
+    private final TaxRateRepository taxRateRepository;
+    private final DiscountRepository discountRepository;
 
     @Transactional
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
@@ -41,7 +33,6 @@ public class OrderService {
         order.setMerchantId(request.getMerchantId());
         order.setStatus(Order.Status.OPEN);
         order = orderRepository.save(order);
-
         return mapToOrderDTO(order);
     }
 
@@ -55,7 +46,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderInfoDTO> getAllOrders(Long merchantId) {
         List<Order> orders = orderRepository.findByMerchantId(merchantId);
-        List<OrderInfoDTO> orderDTOs = orders.stream()
+        return orders.stream()
                 .map(order -> {
                     OrderInfoDTO dto = new OrderInfoDTO();
                     dto.setId(order.getId());
@@ -66,17 +57,13 @@ public class OrderService {
                     return dto;
                 })
                 .toList();
-
-        return orderDTOs;
     }
 
     @Transactional
     public OrderDTO updateOrderStatus(Long orderId, Order.Status status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
-        Order.Status newStatus = order.getStatus().transitionTo(status);
-        order.setStatus(newStatus);
+        order.setStatus(order.getStatus().transitionTo(status));
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
         return mapToOrderDTO(order);
@@ -86,20 +73,17 @@ public class OrderService {
     public OrderDTO updateOrderItemQuantity(Long orderId, Long itemId, Long quantity) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
         if (!order.getStatus().equals(Order.Status.OPEN)) {
             throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
         }
 
-        order.getItems().removeIf(item ->
-                item.getId().equals(itemId) && quantity <= 0L
-        );
-
+        order.getItems().removeIf(item -> item.getId().equals(itemId) && quantity <= 0L);
         order.getItems().stream()
                 .filter(item -> item.getId().equals(itemId))
                 .findFirst()
                 .ifPresent(item -> item.setQuantity(quantity));
 
+        calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
         return mapToOrderDTO(order);
@@ -109,15 +93,14 @@ public class OrderService {
     public OrderDTO removeItemFromOrder(Long orderId, Long itemId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
         if (!order.getStatus().equals(Order.Status.OPEN)) {
             throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
         }
 
         order.getItems().removeIf(item -> item.getId().equals(itemId));
+        calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
-
         return mapToOrderDTO(order);
     }
 
@@ -125,7 +108,6 @@ public class OrderService {
     public OrderDTO addItemToOrder(Long orderId, OrderAddItemRequestDTO request) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
         if (!order.getStatus().equals(Order.Status.OPEN)) {
             throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
         }
@@ -136,15 +118,20 @@ public class OrderService {
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
         orderItem.setItemId(item.getId());
-        // orderItem.setTaxRateId(item.getTaxRateId());
-        orderItem.setTaxRateId(0L);
         orderItem.setPrice(item.getPrice());
         orderItem.setQuantity(request.getQuantity());
 
-        if (null != request.getVariationId()) {
+        if (item.getTaxRateId() != null) {
+            Optional<TaxRate> rateOpt = taxRateRepository.findById(item.getTaxRateId());
+            if (rateOpt.isPresent()) {
+                orderItem.setTaxRateId(rateOpt.get().getId());
+                orderItem.setAppliedTaxRate(rateOpt.get().getRate());
+            }
+        }
+
+        if (request.getVariationId() != null) {
             ProductVariation variation = variationRepository.findById(request.getVariationId())
                     .orElseThrow(() -> new IllegalArgumentException("Product variation not found"));
-
             OrderItemVariation itemVariation = new OrderItemVariation();
             itemVariation.setOrderItem(orderItem);
             itemVariation.setProductVariationId(variation.getId());
@@ -153,65 +140,183 @@ public class OrderService {
         }
 
         order.getItems().add(orderItem);
+
+        calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
         return mapToOrderDTO(order);
     }
 
+    @Transactional
+    public OrderDTO applyOrderDiscount(Long orderId, String discountCode) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        if (discountCode == null || discountCode.trim().isEmpty()) {
+            order.setDiscountId(null);
+        } else {
+            Discount discount = discountRepository.findByCodeAndMerchantId(discountCode, order.getMerchantId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid discount code"));
+
+            if (!discount.isValid()) throw new IllegalArgumentException("Discount is not valid at this time");
+            if (discount.getScope() != Discount.Scope.ORDER) {
+                throw new IllegalArgumentException("This discount can only be applied to specific products");
+            }
+
+            order.setDiscountId(discount.getId());
+        }
+
+        calculateAndPersistDiscounts(order);
+        order = orderRepository.save(order);
+        return mapToOrderDTO(order);
+    }
+
+    @Transactional
+    public OrderDTO applyItemDiscount(Long orderId, Long orderItemId, String discountCode) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        OrderItem item = order.getItems().stream()
+                .filter(i -> i.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+
+        if (discountCode == null || discountCode.trim().isEmpty()) {
+            item.setDiscountId(null);
+        } else {
+            Discount discount = discountRepository.findByCodeAndMerchantId(discountCode, order.getMerchantId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid discount code"));
+
+            if (!discount.isValid()) throw new IllegalArgumentException("Discount is not valid");
+            if (discount.getScope() != Discount.Scope.PRODUCT) {
+                throw new IllegalArgumentException("This code is an order-wide discount");
+            }
+            if (discount.getProductId() != null && !discount.getProductId().equals(item.getItemId())) {
+                throw new IllegalArgumentException("This discount does not apply to this specific product");
+            }
+
+            item.setDiscountId(discount.getId());
+        }
+
+        calculateAndPersistDiscounts(order);
+        order = orderRepository.save(order);
+        return mapToOrderDTO(order);
+    }
+
+    private void calculateAndPersistDiscounts(Order order) {
+        BigDecimal runningSubtotal = BigDecimal.ZERO;
+        BigDecimal runningTax = BigDecimal.ZERO;
+
+        for (OrderItem item : order.getItems()) {
+            BigDecimal qty = BigDecimal.valueOf(item.getQuantity());
+            BigDecimal basePrice = item.getPrice();
+            for (OrderItemVariation v : item.getVariations()) {
+                basePrice = basePrice.add(v.getPriceOffset());
+            }
+            BigDecimal lineGross = basePrice.multiply(qty);
+
+            BigDecimal itemDiscountVal = BigDecimal.ZERO;
+            if (item.getDiscountId() != null) {
+                Optional<Discount> dOpt = discountRepository.findById(item.getDiscountId());
+                if (dOpt.isPresent()) {
+                    Discount d = dOpt.get();
+                    if (d.getType() == Discount.Type.FIXED_AMOUNT) {
+                        itemDiscountVal = d.getValue();
+                    } else {
+                        itemDiscountVal = lineGross.multiply(d.getValue())
+                                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                    }
+                }
+            }
+            if (itemDiscountVal.compareTo(lineGross) > 0) itemDiscountVal = lineGross;
+            item.setAppliedDiscountAmount(itemDiscountVal);
+
+            BigDecimal taxable = lineGross.subtract(itemDiscountVal);
+            if (item.getAppliedTaxRate() != null) {
+                BigDecimal tax = taxable.multiply(item.getAppliedTaxRate())
+                        .setScale(2, RoundingMode.HALF_UP);
+                runningTax = runningTax.add(tax);
+            }
+            runningSubtotal = runningSubtotal.add(taxable);
+        }
+
+        BigDecimal orderDiscountVal = BigDecimal.ZERO;
+        if (order.getDiscountId() != null) {
+            Optional<Discount> dOpt = discountRepository.findById(order.getDiscountId());
+            if (dOpt.isPresent()) {
+                Discount d = dOpt.get();
+                BigDecimal totalBeforeDisc = runningSubtotal.add(runningTax);
+
+                if (d.getType() == Discount.Type.FIXED_AMOUNT) {
+                    orderDiscountVal = d.getValue();
+                } else {
+                    orderDiscountVal = totalBeforeDisc.multiply(d.getValue())
+                            .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                }
+
+                if (orderDiscountVal.compareTo(totalBeforeDisc) > 0) orderDiscountVal = totalBeforeDisc;
+            }
+        }
+        order.setAppliedDiscountAmount(orderDiscountVal);
+    }
 
     private OrderDTO mapToOrderDTO(Order order) {
         Long merchantId = order.getMerchantId();
-
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxAmount = BigDecimal.ZERO;
-        BigDecimal discountAmount = BigDecimal.ZERO;
 
         for (OrderItem item : order.getItems()) {
-            BigDecimal quantity = BigDecimal.valueOf(item.getQuantity());
-            BigDecimal itemTotal = item.getPrice().multiply(quantity);
-
-            for (OrderItemVariation variation : item.getVariations()) {
-                itemTotal = itemTotal.add(variation.getPriceOffset().multiply(quantity));
+            BigDecimal qty = BigDecimal.valueOf(item.getQuantity());
+            BigDecimal base = item.getPrice();
+            for (OrderItemVariation v : item.getVariations()) {
+                base = base.add(v.getPriceOffset());
             }
-            subtotal = subtotal.add(itemTotal);
-        }
-        BigDecimal total = subtotal.add(taxAmount).subtract(discountAmount);
+            BigDecimal lineGross = base.multiply(qty);
+            BigDecimal lineDisc = item.getAppliedDiscountAmount();
+            BigDecimal taxable = lineGross.subtract(lineDisc);
 
-        List<OrderItemDTO> itemDTOs = order.getItems()
-                .stream().sorted(Comparator.comparing(OrderItem::getCreatedAt))
+            subtotal = subtotal.add(taxable);
+            if (item.getAppliedTaxRate() != null) {
+                taxAmount = taxAmount.add(taxable.multiply(item.getAppliedTaxRate()));
+            }
+        }
+
+        BigDecimal orderDiscount = order.getAppliedDiscountAmount();
+        BigDecimal total = subtotal.add(taxAmount).subtract(orderDiscount);
+
+        List<OrderItemDTO> itemDTOs = order.getItems().stream()
+                .sorted(Comparator.comparing(OrderItem::getCreatedAt))
                 .map(item -> {
-                    List<OrderItemVariationDTO> variationDTOs =
-                            item.getVariations().stream().map(variation ->
-                                    OrderItemVariationDTO.builder()
-                                            .id(variation.getId())
-                                            .name(variationRepository.findById(variation.getProductVariationId())
-                                                    .map(ProductVariation::getName)
-                                                    .orElse("Unknown Variation"))
-                                            .priceOffset(variation.getPriceOffset())
-                                            .build()
-                            ).toList();
+                    List<OrderItemVariationDTO> varDTOs = item.getVariations().stream()
+                            .map(v -> OrderItemVariationDTO.builder()
+                                    .id(v.getId())
+                                    .name(variationRepository.findById(v.getProductVariationId())
+                                            .map(ProductVariation::getName).orElse("Variation"))
+                                    .priceOffset(v.getPriceOffset())
+                                    .build())
+                            .toList();
 
                     return OrderItemDTO.builder()
                             .id(item.getId())
                             .name(productService.getProductById(item.getItemId(), merchantId).getName())
                             .price(item.getPrice())
                             .quantity(item.getQuantity())
-                            .variations(variationDTOs)
+                            .variations(varDTOs)
+                            .appliedDiscountAmount(item.getAppliedDiscountAmount())
                             .build();
                 }).toList();
 
-        List<PaymentInfoDTO> paymentDTOs = paymentRepository.findByOrderId(order.getId())
-                .stream().sorted(Comparator.comparing(Payment::getCreatedAt))
-                .map(payment -> PaymentInfoDTO.builder()
-                        .id(payment.getId())
-                        .type(payment.getPaymentType())
-                        .status(payment.getStatus())
-                        .amount(payment.getAmount())
-                        .cashReceived(payment.getCashReceived())
-                        .tip(payment.getTip())
-                        .build()
-                ).toList();
+        List<PaymentInfoDTO> paymentDTOs = paymentRepository.findByOrderId(order.getId()).stream()
+                .map(p -> PaymentInfoDTO.builder()
+                        .id(p.getId())
+                        .type(p.getPaymentType())
+                        .status(p.getStatus())
+                        .amount(p.getAmount())
+                        .cashReceived(p.getCashReceived())
+                        .tip(p.getTip())
+                        .build())
+                .toList();
 
         return OrderDTO.builder()
                 .id(order.getId())
@@ -221,8 +326,8 @@ public class OrderService {
                 .payments(paymentDTOs)
                 .subtotal(subtotal)
                 .taxAmount(taxAmount)
-                .discountAmount(discountAmount)
-                .total(total)
+                .discountAmount(orderDiscount)
+                .total(total.setScale(2, RoundingMode.HALF_UP))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();

@@ -78,3 +78,38 @@ export interface GiftCard {
 export interface GiftCardCreateRequest {
   amount: number
 }
+
+export interface Discount {
+    id: string;
+    code: string;
+    value: number;
+    type: "PERCENTAGE" | "FIXED_AMOUNT";
+    scope: "ORDER" | "PRODUCT";
+    productId?: number;
+    merchantId: number;
+}
+
+export interface Reservation {
+    id: number
+    serviceId: number
+    serviceName: string
+    customerName: string
+    customerContact: string
+    appointmentTime: string
+    status: "CONFIRMED" | "CANCELLED"
+}
+
+export interface ReservationCreateRequest {
+    serviceId: number
+    customerName: string
+    customerContact: string
+    appointmentTime: string
+}
+
+export interface TaxRate {
+    id: string;
+    name: string;
+    rate: number;
+    merchantId: number;
+    isActive: boolean;
+}

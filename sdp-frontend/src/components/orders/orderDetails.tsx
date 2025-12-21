@@ -1,185 +1,255 @@
+import React, { useState } from "react";
 import type { Order, OrderItem, OrderItemVariation } from "@/services/orderService";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 export interface OrderDetailsProps {
-  order: Order;
-  onUpdateQuantity?: (itemId: number, newQuantity: number) => void;
-  onItemRemove?: (itemId: number) => void;
-  onCancel?: () => void;
-  onPay?: () => void;
+    order: Order;
+    onUpdateQuantity?: (itemId: number, newQuantity: number) => void;
+    onItemRemove?: (itemId: number) => void;
+    onCancel?: () => void;
+    onPay?: () => void;
+    onApplyOrderDiscount?: (code: string) => void;
+    onApplyItemDiscount?: (itemId: number, code: string) => void;
+}
+
+function DiscountPopover({ onApply }: { onApply: (code: string) => void }) {
+    const [code, setCode] = useState("");
+    const [open, setOpen] = useState(false);
+
+    const handleSubmit = () => {
+        onApply(code);
+        setOpen(false);
+        setCode("");
+    };
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 text-blue-500 rounded-full border border-blue-200 ml-2 hover:bg-blue-50"
+                    title="Apply Item Discount"
+                >
+                    %
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" side="right">
+                <div className="flex gap-2">
+                    <Input
+                        placeholder="Discount Code"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        className="h-8 text-xs"
+                    />
+                    <Button size="sm" onClick={handleSubmit} className="h-8">Apply</Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
 }
 
 const OrderDetails: React.FC<OrderDetailsProps> = ({
-  order,
-  onUpdateQuantity,
-  onItemRemove,
-  onCancel,
-  onPay }) => {
+                                                       order,
+                                                       onUpdateQuantity,
+                                                       onItemRemove,
+                                                       onCancel,
+                                                       onPay,
+                                                       onApplyOrderDiscount,
+                                                       onApplyItemDiscount
+                                                   }) => {
+    const [orderDiscountCode, setOrderDiscountCode] = useState("");
 
-  const updateQuantity = (itemId: number, newQuantity: number) => {
-    if (!onUpdateQuantity) return;
-    onUpdateQuantity(itemId, newQuantity);
-  }
-  const removeItem = (itemId: number) => {
-    if (!onItemRemove) return;
-    onItemRemove(itemId);
-  }
-  
-  return (
-    <>
-      {/* Basic info */}
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Order ID</span>
-          <span className="font-medium">#{order.id}</span>
-        </div>
+    const updateQuantity = (itemId: number, newQuantity: number) => {
+        if (!onUpdateQuantity) return;
+        onUpdateQuantity(itemId, newQuantity);
+    };
 
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Status</span>
-          <span className="font-medium">{order.status}</span>
-        </div>
-      </div>
+    const removeItem = (itemId: number) => {
+        if (!onItemRemove) return;
+        onItemRemove(itemId);
+    };
 
-      {/* Items */}
-      {order.items.length > 0 && (
-        <div className="border-t pt-4 space-y-4">
-          <h3 className="text-lg font-semibold">Items</h3>
-          <div className="space-y-2">
-            {order.items.map((item: OrderItem) => (
-              <div key={item.id} className="p-2 border rounded flex gap-3">
-                {/* Quantity controls */}
-                {
-                  onUpdateQuantity &&
-                  <div className="flex flex-col items-center justify-center gap-0 text-l leading-none">
-                    <span
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="cursor-pointer select-none text-gray-500 hover:text-black"
-                      >+</span>
-                    <span
-                      onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
-                      className="cursor-pointer select-none text-gray-500 hover:text-black"
-                      >−</span>
-                  </div>
-                }
+    const handleOrderDiscountSubmit = () => {
+        if (onApplyOrderDiscount) {
+            onApplyOrderDiscount(orderDiscountCode);
+            setOrderDiscountCode("");
+        }
+    };
 
-                
-                {/* Item info */}
-                <div className="flex-1">
-                  <div className="flex justify-between">
-                    <span className="font-medium">
-                      {item.quantity} × {item.name}
-                    </span>
-                    <div>
-                      <span>
-                        ${(
-                          (item.price +
-                            item.variations.reduce(
-                              (acc, variation) => acc + variation.priceOffset,
-                              0
-                            )) *
-                          item.quantity
-                        ).toFixed(2)}
-                      </span>
-                      {
-                        onItemRemove && 
-                        <span
-                          onClick={() => removeItem(item.id)}
-                          className="ml-4 cursor-pointer text-red-500 hover:text-red-700"
-                        >×</span>
-                      }
-                    </div>
-                  </div>
-
-                  {item.variations.length > 0 && (
-                    <ul className="ml-4 mt-1 space-y-1 text-sm text-muted-foreground">
-                      {item.variations.map((variation: OrderItemVariation) => (
-                        <li key={variation.id}>{variation.name}</li>
-                      ))}
-                    </ul>
-                  )}
+    return (
+        <div className="flex flex-col h-full">
+            <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                    <span className="text-muted-foreground">Order ID</span>
+                    <span className="font-medium">#{order.id}</span>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Totals */}
-      <div className="border-t pt-4 space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>${order.subtotal.toFixed(2)}</span>
-        </div>
-
-        <div className="flex justify-between">
-          <span>Tax</span>
-          <span>${order.taxAmount.toFixed(2)}</span>
-        </div>
-
-        <div className="flex justify-between">
-          <span>Discount</span>
-          <span className="text-green-600">
-            -${order.discountAmount.toFixed(2)}
-          </span>
-        </div>
-
-        <div className="flex justify-between border-t pt-2 font-semibold text-base">
-          <span>Total</span>
-          <span>${order.total.toFixed(2)}</span>
-        </div>
-      </div>
-
-      {/* Payments */}
-      {order.payments.length > 0 && (
-        <div className="border-t pt-4 space-y-3 text-sm">
-          <h3 className="text-lg font-semibold">Payments</h3>
-
-          {order.payments.map((payment) => (
-            <div key={payment.id} className="flex justify-between items-start">
-              {/* Left: payment type */}
-              <span className="font-medium">{payment.type}</span>
-
-              {/* Right: amount + status + tip */}
-              <div className="text-right">
-                <div>
-                  ${payment.amount.toFixed(2)}{" "}
-                  <span className="">
-                    - {payment.status}
-                  </span>
+                <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className="font-medium">{order.status}</span>
                 </div>
-
-                {payment.tip > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    Tip: ${payment.tip.toFixed(2)}
-                  </div>
-                )}
-              </div>
             </div>
-          ))}
+
+            {order.items.length > 0 && (
+                <div className="border-t pt-4 space-y-4 flex-1 overflow-y-auto min-h-[200px]">
+                    <h3 className="text-lg font-semibold">Items</h3>
+                    <div className="space-y-2">
+                        {order.items.map((item: OrderItem) => {
+                            const basePrice = item.price + item.variations.reduce((acc, v) => acc + v.priceOffset, 0);
+                            const lineTotal = basePrice * item.quantity;
+
+                            return (
+                                <div key={item.id} className="p-2 border rounded flex gap-3">
+                                    {onUpdateQuantity && (
+                                        <div className="flex flex-col items-center justify-center gap-0 text-l leading-none">
+                                            <span
+                                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                className="cursor-pointer select-none text-gray-500 hover:text-black"
+                                            >+</span>
+                                            <span
+                                                onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                                                className="cursor-pointer select-none text-gray-500 hover:text-black"
+                                            >−</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium flex items-center gap-2">
+                                                    {item.quantity} × {item.name}
+                                                    {onApplyItemDiscount && order.status === "OPEN" && (
+                                                        <DiscountPopover
+                                                            onApply={(code) => onApplyItemDiscount(item.id, code)}
+                                                        />
+                                                    )}
+                                                </span>
+
+                                                {item.variations.length > 0 && (
+                                                    <ul className="ml-4 mt-1 space-y-1 text-sm text-muted-foreground">
+                                                        {item.variations.map((variation: OrderItemVariation) => (
+                                                            <li key={variation.id}>{variation.name}</li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+
+                                                {/* Item Discount Row with small 'x' */}
+                                                {item.appliedDiscountAmount && item.appliedDiscountAmount > 0 ? (
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <span className="text-xs text-green-600 font-semibold">
+                                                            Discount: -${item.appliedDiscountAmount.toFixed(2)}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => onApplyItemDiscount && onApplyItemDiscount(item.id, "")}
+                                                            className="text-gray-400 hover:text-red-500 text-[10px] ml-1 font-bold"
+                                                            title="Remove Discount"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+
+                                            <div className="text-right">
+                                                <div>${lineTotal.toFixed(2)}</div>
+                                                {/* UNDO: Restored original 'Remove' styling */}
+                                                {onItemRemove && (
+                                                    <span
+                                                        onClick={() => removeItem(item.id)}
+                                                        className="cursor-pointer text-red-500 hover:text-red-700 text-xs"
+                                                    >× Remove</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div className="border-t pt-4 space-y-2 text-sm bg-white mt-auto">
+                {onApplyOrderDiscount && order.status === "OPEN" && (
+                    <div className="flex gap-2 mb-4">
+                        <Input
+                            placeholder="Order Discount Code"
+                            value={orderDiscountCode}
+                            onChange={(e) => setOrderDiscountCode(e.target.value)}
+                            className="h-8 text-xs"
+                        />
+                        <Button size="sm" variant="secondary" onClick={handleOrderDiscountSubmit} className="h-8">
+                            Apply
+                        </Button>
+                    </div>
+                )}
+
+                <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>${order.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>Tax</span>
+                    <span>${order.taxAmount.toFixed(2)}</span>
+                </div>
+
+                {/* Order Discount Row with small 'x' */}
+                {order.discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-green-600 font-semibold">
+                        <span>Order Discount</span>
+                        <div className="flex items-center gap-1">
+                            <span>-${order.discountAmount.toFixed(2)}</span>
+                            <button
+                                onClick={() => onApplyOrderDiscount && onApplyOrderDiscount("")}
+                                className="text-gray-400 hover:text-red-500 text-xs font-bold"
+                                title="Remove Discount"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex justify-between border-t pt-2 font-semibold text-base">
+                    <span>Total</span>
+                    <span>${order.total.toFixed(2)}</span>
+                </div>
+            </div>
+
+            {order.payments.length > 0 && (
+                <div className="border-t pt-4 space-y-3 text-sm">
+                    <h3 className="text-lg font-semibold">Payments</h3>
+                    {order.payments.map((payment) => (
+                        <div key={payment.id} className="flex justify-between items-start">
+                            <span className="font-medium">{payment.type}</span>
+                            <div className="text-right">
+                                <div>${payment.amount.toFixed(2)} - {payment.status}</div>
+                                {payment.tip > 0 && (
+                                    <div className="text-xs text-muted-foreground">Tip: ${payment.tip.toFixed(2)}</div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="border-t pt-4 flex gap-4 justify-end">
+                {onCancel && order.status === "OPEN" && (
+                    <Button className="w-1/3" variant="destructive" onClick={onCancel}>Cancel</Button>
+                )}
+                {onPay && order.status === "OPEN" && (
+                    <Button className="w-1/3" onClick={onPay}>Take Payment</Button>
+                )}
+            </div>
+
+            <div className="border-t pt-4 text-xs text-muted-foreground space-y-1">
+                <p>Created: {new Date(order.createdAt).toLocaleString()}</p>
+                <p>Updated: {new Date(order.updatedAt).toLocaleString()}</p>
+            </div>
         </div>
-      )}
-
-      {/* Action buttons */}
-      <div className="border-t pt-4 flex gap-4 justify-end">
-        {onCancel && (
-          <Button className="w-1/3" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        {onPay && (
-          <Button className="w-1/3" onClick={onPay}>
-            Take Payment
-          </Button>
-        )}
-      </div>
-
-      {/* Timestamps */}
-      <div className="border-t pt-4 text-xs text-muted-foreground space-y-1">
-        <p>Created: {new Date(order.createdAt).toLocaleString()}</p>
-        <p>Updated: {new Date(order.updatedAt).toLocaleString()}</p>
-      </div>
-    </>
-  );
+    );
 };
 
 export default OrderDetails;

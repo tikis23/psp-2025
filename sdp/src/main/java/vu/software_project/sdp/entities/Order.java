@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.math.BigDecimal;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -31,6 +32,12 @@ public class Order {
     @Column(nullable = false)
     private Status status;
 
+    @Column(name = "discount_id")
+    private String discountId;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal appliedDiscountAmount = BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -46,11 +53,7 @@ public class Order {
     private OffsetDateTime updatedAt;
 
     public enum Status {
-        OPEN,
-        // CLOSED, // unused. Paid/Cancelled/Refunded are more descriptive
-        PAID,
-        CANCELLED,
-        REFUNDED;
+        OPEN, PAID, CANCELLED, REFUNDED;
 
         private EnumSet<Status> allowedTransitions;
         static {
