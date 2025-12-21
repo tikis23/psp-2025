@@ -170,6 +170,7 @@ public class OrderService {
         OrderItem orderItem = new OrderItem();
         orderItem.setOrder(order);
         orderItem.setItemId(item.getId());
+        orderItem.setName(item.getName());
         orderItem.setPrice(item.getPrice());
         orderItem.setQuantity(request.getQuantity());
 
@@ -187,6 +188,7 @@ public class OrderService {
             OrderItemVariation itemVariation = new OrderItemVariation();
             itemVariation.setOrderItem(orderItem);
             itemVariation.setProductVariationId(variation.getId());
+            itemVariation.setName(variation.getName());
             itemVariation.setPriceOffset(variation.getPriceOffset());
             orderItem.getVariations().add(itemVariation);
         }
@@ -362,8 +364,6 @@ public class OrderService {
     }
 
     private OrderDTO mapToOrderDTO(Order order) {
-        Long merchantId = order.getMerchantId();
-     
         OrderCostInfoDTO costInfo = calculateOrderCosts(order);
 
         List<OrderItemDTO> itemDTOs = order.getItems().stream()
@@ -372,15 +372,14 @@ public class OrderService {
                     List<OrderItemVariationDTO> varDTOs = item.getVariations().stream()
                             .map(v -> OrderItemVariationDTO.builder()
                                     .id(v.getId())
-                                    .name(variationRepository.findById(v.getProductVariationId())
-                                            .map(ProductVariation::getName).orElse("Variation"))
+                                    .name(v.getName())
                                     .priceOffset(v.getPriceOffset())
                                     .build())
                             .toList();
 
                     return OrderItemDTO.builder()
                             .id(item.getId())
-                            .name(productService.getProductById(item.getItemId(), merchantId).getName())
+                            .name(item.getName())
                             .price(item.getPrice())
                             .quantity(item.getQuantity())
                             .variations(varDTOs)
