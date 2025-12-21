@@ -1,15 +1,18 @@
 import { fetchApi } from "./fetchClient"
 import type { GiftCard, GiftCardCreateRequest } from "@/types"
 
-export const getAllGiftCards = (): Promise<GiftCard[]> => {
-  return fetchApi<GiftCard[]>("/api/gift-cards", { method: "GET" })
+export const getAllGiftCards = (merchantId: number): Promise<GiftCard[]> => {
+  return fetchApi(`/api/gift-cards?merchantId=${merchantId}`)
 }
 
-export const createGiftCard = (data: GiftCardCreateRequest): Promise<GiftCard> => {
-  return fetchApi<GiftCard>("/api/gift-cards", {
+export const createGiftCard = (
+  data: GiftCardCreateRequest,
+  merchantId: number
+): Promise<GiftCard> => {
+  return fetchApi(`/api/gift-cards?merchantId=${merchantId}`, {
     method: "POST",
-    body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   })
 }
 
@@ -17,8 +20,11 @@ export const checkGiftCardBalance = (code: string): Promise<any> => {
   return fetchApi(`/gift-cards/${encodeURIComponent(code)}/balance`, { method: "GET" })
 }
 
-export const deleteGiftCard = (code: string): Promise<void> => {
-  return fetchApi<void>(`/api/gift-cards/${encodeURIComponent(code)}`, {
+export const deleteGiftCard = (
+  code: string,
+  merchantId: number
+): Promise<void> => {
+  return fetchApi(`/api/gift-cards/${code}?merchantId=${merchantId}`, {
     method: "DELETE",
   })
 }
