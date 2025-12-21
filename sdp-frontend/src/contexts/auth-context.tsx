@@ -12,6 +12,7 @@ import {
   userLogout,
 } from "../services/authService"
 import type { User, AuthContextType } from "../types"; // Import types
+import { useNavigate } from "react-router-dom";
 
 // 1. Create the Context with correct typing
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -26,6 +27,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true) // Start loading
+  const navigate = useNavigate();
 
   // --- Check session on initial load ---
   const checkAuthStatus = useCallback(async (): Promise<void> => {
@@ -75,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null)
       setIsAuthenticated(false)
-      // Clear any other relevant local storage/state if necessary
+      navigate("/login");
     }
   }
 
