@@ -50,6 +50,12 @@ public class ItemController {
         return ResponseEntity.ok(allItems);
     }
 
+    @GetMapping("/products")
+    public ResponseEntity<List<ItemResponseDTO>> getAllProducts(@RequestParam Long merchantId) {
+        List<ItemResponseDTO> products = productService.getProductsByMerchant(merchantId);
+        return ResponseEntity.ok(products);
+    }
+     
     @GetMapping("/{id}")
     public ResponseEntity<ItemResponseDTO> getItem(
             @PathVariable Long id,

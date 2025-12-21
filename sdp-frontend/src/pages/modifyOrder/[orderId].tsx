@@ -14,7 +14,7 @@ import {
 } from "@/services/orderService"
 import OrderDetails from "@/components/orders/orderDetails"
 import ItemMenu from "@/components/orders/itemMenu"
-import { getAllItems } from "@/services/itemService"
+import { getAllProducts } from "@/services/itemService"
 import type { Item } from "@/types"
 import PaymentOverlay from "@/components/orders/paymentOverlay"
 import ReceiptOverlay from "@/components/orders/receiptOverlay"
@@ -57,7 +57,7 @@ const ModifyOrderPage = () => {
 
     useEffect(() => {
         if (user?.merchantId) {
-            getAllItems(user.merchantId)
+            getAllProducts(user.merchantId)
                 .then((items) => setAvailableItems(items))
                 .catch((error) => {
                     toast.error("Failed to load available items.")
