@@ -22,6 +22,7 @@ public class Reservation {
     @Column(nullable = false)
     private Long serviceId;
 
+    @Column(nullable = false)
     private Long employeeId;
 
     @Column(nullable = false)

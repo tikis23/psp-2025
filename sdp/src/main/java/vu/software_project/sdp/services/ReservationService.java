@@ -102,12 +102,10 @@ public class ReservationService {
                 .map(ServiceItem::getName)
                 .orElse("Unknown Service");
 
-        String employeeName = "Unassigned";
-        if (res.getEmployeeId() != null) {
-            employeeName = userRepository.findById(res.getEmployeeId())
-                    .map(User::getName)
-                    .orElse("Unknown Employee");
-        }
+        String employeeName = userRepository.findById(res.getEmployeeId())
+                .map(User::getName)
+                .orElse("Unknown Employee");
+
 
         return ReservationResponseDto.builder()
                 .id(res.getId())

@@ -42,7 +42,6 @@ export default function ReservationsPage() {
 
     const loadData = async () => {
         if (!user?.merchantId) return
-
         setIsLoading(true)
         try {
             const [reservationsData, itemsData, employeesData] = await Promise.all([
@@ -54,6 +53,10 @@ export default function ReservationsPage() {
             setReservations(reservationsData)
             setServices(itemsData.filter(item => item.type === "SERVICE_ITEM"))
             setEmployees(employeesData)
+
+            if (employeesData.length > 0 && formData.employeeId === 0) {
+                setFormData(prev => ({ ...prev, employeeId: employeesData[0].id }))
+            }
         } catch (error) {
             console.error(error)
             toast.error("Failed to load data")
@@ -70,9 +73,9 @@ export default function ReservationsPage() {
             return
         }
 
-        if (!formData.customerName || !formData.appointmentTime) {
-            toast.error("Please fill in all required fields")
-            return
+        if (!formData.customerName || !formData.appointmentTime || !formData.employeeId) {
+            toast.error("Please fill in all required fields (including Employee)");
+            return;
         }
 
         setIsSubmitting(true)
@@ -194,7 +197,6 @@ export default function ReservationsPage() {
                                         value={formData.employeeId}
                                         onChange={(e) => setFormData({...formData, employeeId: Number(e.target.value)})}
                                     >
-                                        <option value={0}>Any Employee</option>
                                         {employees.map(emp => (
                                             <option key={emp.id} value={emp.id}>{emp.name}</option>
                                         ))}
