@@ -19,8 +19,10 @@ public class GiftCardController {
     private final GiftCardService giftCardService;
 
     @GetMapping
-    public ResponseEntity<List<GiftCardResponseDTO>> listAll() {
-        List<GiftCardResponseDTO> data = giftCardService.getAll()
+    public ResponseEntity<List<GiftCardResponseDTO>> listAll(
+            @RequestParam Long merchantId
+    ) {
+        var data = giftCardService.getAll(merchantId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -29,9 +31,21 @@ public class GiftCardController {
     }
 
     @PostMapping
-    public ResponseEntity<GiftCardResponseDTO> create(@RequestBody CreateGiftCardRequestDTO request) {
-        GiftCard gc = giftCardService.createGiftCard(request.getAmount());
+    public ResponseEntity<GiftCardResponseDTO> create(
+            @RequestParam Long merchantId,
+            @RequestBody CreateGiftCardRequestDTO request
+    ) {
+        GiftCard gc = giftCardService.createGiftCard(merchantId, request.getAmount());
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(gc));
+    }
+
+    @DeleteMapping("/{code}")
+    public ResponseEntity<Void> delete(
+            @PathVariable String code,
+            @RequestParam Long merchantId
+    ) {
+        giftCardService.deleteByCode(merchantId, code);
+        return ResponseEntity.noContent().build();
     }
 
     private GiftCardResponseDTO toDto(GiftCard gc) {
@@ -44,11 +58,4 @@ public class GiftCardController {
                 .expiryDate(gc.getExpiryDate())
                 .build();
     }
-
-    @DeleteMapping("/{code}")
-    public ResponseEntity<Void> delete(@PathVariable String code) {
-        giftCardService.deleteByCode(code);
-        return ResponseEntity.noContent().build();
-    }
-
 }

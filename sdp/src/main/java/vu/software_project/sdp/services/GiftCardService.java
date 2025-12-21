@@ -8,7 +8,7 @@ import vu.software_project.sdp.repositories.GiftCardRepository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,13 +18,14 @@ public class GiftCardService {
     private final GiftCardRepository giftCardRepository;
 
     @Transactional
-    public GiftCard createGiftCard(BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+    public GiftCard createGiftCard(Long merchantId, BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("Gift card amount must be positive");
         }
 
         GiftCard gc = new GiftCard();
-        gc.setCode(generateCode());
+        gc.setCode("GC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        gc.setMerchantId(merchantId);
         gc.setInitialBalance(amount);
         gc.setCurrentBalance(amount);
         gc.setActive(true);
@@ -33,45 +34,38 @@ public class GiftCardService {
         return giftCardRepository.save(gc);
     }
 
-    @Transactional
-    public GiftCard deduct(String code, BigDecimal amount) {
-        GiftCard card = giftCardRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("GIFT_CARD_NOT_FOUND"));
-
-        if (!Boolean.TRUE.equals(card.getActive())) {
-            throw new IllegalStateException("GIFT_CARD_INACTIVE");
-        }
-        if (card.getExpiryDate() != null &&
-            card.getExpiryDate().isBefore(OffsetDateTime.now())) {
-            throw new IllegalStateException("GIFT_CARD_EXPIRED");
-        }
-        if (card.getCurrentBalance().compareTo(amount) < 0) {
-            throw new IllegalArgumentException("INSUFFICIENT_GIFT_CARD_BALANCE");
-        }
-
-        card.setCurrentBalance(card.getCurrentBalance().subtract(amount));
-        if (card.getCurrentBalance().compareTo(BigDecimal.ZERO) == 0) {
-            card.setActive(false);
-        }
-
-        return giftCardRepository.save(card);
-    }
-
-    private String generateCode() {
-        return "GC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
     @Transactional(readOnly = true)
-    public java.util.List<GiftCard> getAll() {
-        return giftCardRepository.findAll();
+    public List<GiftCard> getAll(Long merchantId) {
+        return giftCardRepository.findAllByMerchantId(merchantId);
     }
 
     @Transactional
-    public void deleteByCode(String code) {
-        if (!giftCardRepository.existsById(code)) {
+    public void deleteByCode(Long merchantId, String code) {
+        if (!giftCardRepository.existsByCodeAndMerchantId(code, merchantId)) {
             throw new IllegalArgumentException("GIFT_CARD_NOT_FOUND");
         }
         giftCardRepository.deleteById(code);
     }
 
+    @Transactional
+    public GiftCard deduct(Long merchantId, String code, BigDecimal amount) {
+        GiftCard card = giftCardRepository.findByCodeAndMerchantId(code, merchantId)
+                .orElseThrow(() -> new IllegalArgumentException("GIFT_CARD_NOT_FOUND"));
+
+        if (!card.getActive()) throw new IllegalStateException("GIFT_CARD_INACTIVE");
+        if (card.getCurrentBalance().compareTo(amount) < 0)
+            throw new IllegalArgumentException("INSUFFICIENT_GIFT_CARD_BALANCE");
+
+        card.setCurrentBalance(card.getCurrentBalance().subtract(amount));
+        if (card.getCurrentBalance().signum() == 0) card.setActive(false);
+
+        return giftCardRepository.save(card);
+    }
+
+    @Transactional(readOnly = true)
+    public GiftCard getByCode(Long merchantId, String code) {
+        return giftCardRepository.findByCodeAndMerchantId(code, merchantId)
+                .orElseThrow(() -> new IllegalArgumentException("GIFT_CARD_NOT_FOUND"));
+    }
 }
+

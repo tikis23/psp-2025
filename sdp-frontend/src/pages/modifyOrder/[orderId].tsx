@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/auth-context"
 
 const ModifyOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>()
+  const { user } = useAuth()
 
   const { user } = useAuth()
 
@@ -53,7 +54,8 @@ const ModifyOrderPage = () => {
         console.error("Error fetching order:", error)
       })
 
-    getAllItems(user?.merchantId)
+    if (!user?.merchantId) return
+    getAllItems(user.merchantId)
       .then((items) => setAvailableItems(items))
       .catch((error) => {
         toast.error("Failed to load available items. Please try again.")

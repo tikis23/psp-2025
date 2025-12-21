@@ -199,7 +199,7 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                         )}
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end text-white">
                         <Button onClick={primaryAction} disabled={isSubmitting || method === "CARD"}>
                             {method === "CASH" && "Take Cash payment"}
                             {method === "GIFT_CARD" && "Take Gift Card payment"}
