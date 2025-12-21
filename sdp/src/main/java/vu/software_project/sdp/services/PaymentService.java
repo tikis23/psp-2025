@@ -3,6 +3,8 @@ package vu.software_project.sdp.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import vu.software_project.sdp.DTOs.orders.OrderCostInfoDTO;
 import vu.software_project.sdp.DTOs.payments.PaymentRequestDTO;
 import vu.software_project.sdp.DTOs.payments.cash.CashPaymentResponseDTO;
 import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentResponseDTO;
@@ -24,6 +26,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final GiftCardService giftCardService;
     private final OrderRepository orderRepository;
+    private final OrderService orderService;
 
     @Transactional
     public CashPaymentResponseDTO createCashPayment(Long orderId, PaymentRequestDTO request) {
@@ -33,7 +36,8 @@ public class PaymentService {
 
         Order order = loadOrder(orderId);
 
-        BigDecimal total = calculateOrderTotal(order);
+        OrderCostInfoDTO costInfo = orderService.calculateOrderCosts(order);
+        BigDecimal total = costInfo.getTotal();
         BigDecimal alreadyPaid = calculatePaidAmount(orderId);
         BigDecimal remainingBefore = maxZero(total.subtract(alreadyPaid));
 
@@ -85,7 +89,8 @@ public class PaymentService {
 
         Order order = loadOrder(orderId);
 
-        BigDecimal total = calculateOrderTotal(order);
+        OrderCostInfoDTO costInfo = orderService.calculateOrderCosts(order);
+        BigDecimal total = costInfo.getTotal();
         BigDecimal alreadyPaid = calculatePaidAmount(orderId);
         BigDecimal remainingBefore = maxZero(total.subtract(alreadyPaid));
 
@@ -147,23 +152,6 @@ public class PaymentService {
     private Order loadOrder(Long orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-    }
-
-
-    private BigDecimal calculateOrderTotal(Order order) {
-        BigDecimal subtotal = BigDecimal.ZERO;
-
-        for (var item : order.getItems()) {
-            BigDecimal qty = BigDecimal.valueOf(item.getQuantity());
-            BigDecimal itemTotal = item.getPrice().multiply(qty);
-
-            for (var variation : item.getVariations()) {
-                itemTotal = itemTotal.add(variation.getPriceOffset().multiply(qty));
-            }
-            subtotal = subtotal.add(itemTotal);
-        }
-
-        return subtotal;
     }
 
     private BigDecimal calculatePaidAmount(Long orderId) {

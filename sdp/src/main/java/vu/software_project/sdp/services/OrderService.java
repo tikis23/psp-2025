@@ -261,8 +261,7 @@ public class OrderService {
         order.setAppliedDiscountAmount(orderDiscountVal);
     }
 
-    private OrderDTO mapToOrderDTO(Order order) {
-        Long merchantId = order.getMerchantId();
+    public OrderCostInfoDTO calculateOrderCosts(Order order) {
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal taxAmount = BigDecimal.ZERO;
 
@@ -274,6 +273,9 @@ public class OrderService {
             }
             BigDecimal lineGross = base.multiply(qty);
             BigDecimal lineDisc = item.getAppliedDiscountAmount();
+            if (lineDisc == null) {
+                lineDisc = BigDecimal.ZERO;
+            }
             BigDecimal taxable = lineGross.subtract(lineDisc);
 
             subtotal = subtotal.add(taxable);
@@ -283,7 +285,23 @@ public class OrderService {
         }
 
         BigDecimal orderDiscount = order.getAppliedDiscountAmount();
+        if (orderDiscount == null) {
+            orderDiscount = BigDecimal.ZERO;
+        }
         BigDecimal total = subtotal.add(taxAmount).subtract(orderDiscount);
+
+        return OrderCostInfoDTO.builder()
+            .subtotal(subtotal.setScale(2, RoundingMode.HALF_UP))
+            .taxAmount(taxAmount.setScale(2, RoundingMode.HALF_UP))
+            .discountAmount(orderDiscount.setScale(2, RoundingMode.HALF_UP))
+            .total(total.setScale(2, RoundingMode.HALF_UP))
+            .build();
+    }
+
+    private OrderDTO mapToOrderDTO(Order order) {
+        Long merchantId = order.getMerchantId();
+     
+        OrderCostInfoDTO costInfo = calculateOrderCosts(order);
 
         List<OrderItemDTO> itemDTOs = order.getItems().stream()
                 .sorted(Comparator.comparing(OrderItem::getCreatedAt))
@@ -324,10 +342,10 @@ public class OrderService {
                 .status(order.getStatus())
                 .items(itemDTOs)
                 .payments(paymentDTOs)
-                .subtotal(subtotal)
-                .taxAmount(taxAmount)
-                .discountAmount(orderDiscount)
-                .total(total.setScale(2, RoundingMode.HALF_UP))
+                .subtotal(costInfo.getSubtotal())
+                .taxAmount(costInfo.getTaxAmount())
+                .discountAmount(costInfo.getDiscountAmount())
+                .total(costInfo.getTotal())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();

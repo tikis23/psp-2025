@@ -1,4 +1,4 @@
-package vu.software_project.sdp.DTOs.reservation;
+package vu.software_project.sdp.DTOs.reservations;
 
 import lombok.Data;
 import java.time.OffsetDateTime;
