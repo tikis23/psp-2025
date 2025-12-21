@@ -22,6 +22,8 @@ const ModifyOrderPage = () => {
   const { orderId } = useParams<{ orderId: string }>()
   const { user } = useAuth()
 
+  const { user } = useAuth()
+
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [availableItems, setAvailableItems] = useState<Item[]>([])
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false)
@@ -32,6 +34,10 @@ const ModifyOrderPage = () => {
     setCurrentOrder(null)
     if (!orderId) {
       toast.error("No order ID provided.")
+      return
+    }
+    if (!user?.merchantId) {
+      toast.error("User not associated with a merchant. Please try again.")
       return
     }
 
