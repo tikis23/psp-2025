@@ -103,12 +103,9 @@ export const updateOrderItemQuantity = (
     itemId: number,
     newQuantity: number
 ): Promise<Order> => {
-    return fetchApi<Order>(`/api/orders/${orderId}/items/${itemId}`, {
+    return fetchApi<Order>(`/api/orders/${orderId}/items/${itemId}/quantity`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quantity: newQuantity }),
+        body: newQuantity.toString(),
     });
 }
 
@@ -127,10 +124,7 @@ export const updateOrderStatus = (
 ): Promise<Order> => {
     return fetchApi<Order>(`/api/orders/${orderId}/status`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
+        body: newStatus,
     });
 }
 

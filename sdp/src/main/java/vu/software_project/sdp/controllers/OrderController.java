@@ -2,9 +2,12 @@ package vu.software_project.sdp.controllers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import vu.software_project.sdp.DTOs.orders.CreateOrderRequestDTO;
 import vu.software_project.sdp.DTOs.orders.OrderDTO;
 import vu.software_project.sdp.DTOs.orders.OrderInfoDTO;
+import vu.software_project.sdp.config.security.CustomUserDetails;
 import vu.software_project.sdp.entities.Order;
 import vu.software_project.sdp.DTOs.orders.OrderAddItemRequestDTO;
 import vu.software_project.sdp.services.OrderService;
@@ -30,19 +34,26 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequestDTO request) {
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'BUSINESS_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<?> createOrder(
+            @RequestBody CreateOrderRequestDTO request,
+            Authentication authentication
+    ) {
         if (request.getMerchantId() == null) {
-            return ResponseEntity.badRequest().body("merchantId is required");
+            return ResponseEntity.badRequest().body("Order Creation Request must contain merchantId");
         }
-        OrderDTO orderDTO = orderService.createOrder(request);
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        OrderDTO orderDTO = orderService.createOrder(request, userDetails.getId(), userDetails.getMerchantId());
         return ResponseEntity.status(HttpStatus.CREATED).body(orderDTO);
     }
 
     @PutMapping("/{orderId}/status")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestBody String status) {
+    public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestBody String status, Authentication authentication) {
         try {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             Order.Status orderStatus = Order.Status.valueOf(status.toUpperCase());
-            OrderDTO updatedOrder = orderService.updateOrderStatus(orderId, orderStatus);
+            OrderDTO updatedOrder = orderService.updateOrderStatus(orderId, orderStatus, userDetails.getId(), userDetails.getMerchantId());
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
@@ -52,9 +63,11 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}/items/{itemId}/quantity")
-    public ResponseEntity<?> updateOrderItemQuantity(@PathVariable Long orderId, @PathVariable Long itemId, @RequestBody Long quantity) {
+    public ResponseEntity<?> updateOrderItemQuantity(@PathVariable Long orderId, @PathVariable Long itemId, @RequestBody Long quantity, Authentication authentication) {
         try {
-            OrderDTO updatedOrder = orderService.updateOrderItemQuantity(orderId, itemId, quantity);
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+            OrderDTO updatedOrder = orderService.updateOrderItemQuantity(orderId, itemId, quantity, userDetails.getId(), userDetails.getMerchantId());
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
@@ -62,9 +75,11 @@ public class OrderController {
     }
 
     @DeleteMapping("/{orderId}/items/{itemId}")
-    public ResponseEntity<?> removeItemFromOrder(@PathVariable Long orderId, @PathVariable Long itemId) {
+    public ResponseEntity<?> removeItemFromOrder(@PathVariable Long orderId, @PathVariable Long itemId, Authentication authentication) {
         try {
-            OrderDTO updatedOrder = orderService.removeItemFromOrder(orderId, itemId);
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+            OrderDTO updatedOrder = orderService.removeItemFromOrder(orderId, itemId, userDetails.getId(), userDetails.getMerchantId());
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
@@ -72,9 +87,11 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/items")
-    public ResponseEntity<?> addItemToOrder(@PathVariable Long orderId, @RequestBody OrderAddItemRequestDTO request) {
+    public ResponseEntity<?> addItemToOrder(@PathVariable Long orderId, @RequestBody OrderAddItemRequestDTO request, Authentication authentication) {
         try {
-            OrderDTO updatedOrder = orderService.addItemToOrder(orderId, request);
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+            OrderDTO updatedOrder = orderService.addItemToOrder(orderId, request, userDetails.getId(), userDetails.getMerchantId());
             return ResponseEntity.status(HttpStatus.OK).body(updatedOrder);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());

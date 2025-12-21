@@ -15,6 +15,7 @@ import vu.software_project.sdp.DTOs.auth.LoginRequestDTO;
 import vu.software_project.sdp.DTOs.auth.LogoutResponseDTO;
 import vu.software_project.sdp.DTOs.auth.UserRegisterRequestDTO;
 import vu.software_project.sdp.DTOs.auth.UserRegisterResponseDTO;
+import vu.software_project.sdp.config.security.CustomUserDetails;
 import vu.software_project.sdp.services.UserService;
 import vu.software_project.sdp.entities.User;
 
@@ -72,13 +73,16 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> me() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
+    public ResponseEntity<User> me(Authentication authentication) {
+        if (!authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        String email = auth.getName();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String email = userDetails.getEmail();
         Optional<User> userOpt = userService.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return userOpt.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }

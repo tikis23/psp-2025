@@ -11,6 +11,10 @@ export const getAllItems = (merchantId: number): Promise<Item[]> => {
   return fetchApi<Item[]>(`/api/items?merchantId=${merchantId}`)
 }
 
+export const getAllProducts = (merchantId: number): Promise<Item[]> => {
+  return fetchApi<Item[]>(`/api/items/products?merchantId=${merchantId}`)
+}
+
 export const getItem = (id: number, merchantId: number): Promise<Item> => {
   return fetchApi<Item>(`/api/items/${id}?merchantId=${merchantId}`)
 }

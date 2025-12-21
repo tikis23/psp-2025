@@ -1,7 +1,7 @@
 package vu.software_project.sdp.DTOs.reservations;
 
 import lombok.Data;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Data
 public class ReservationCreateRequestDto {
@@ -10,5 +10,5 @@ public class ReservationCreateRequestDto {
     private Long employeeId;
     private String customerName;
     private String customerContact;
-    private java.time.LocalDateTime appointmentTime;
+    private LocalDateTime appointmentTime;
 }
