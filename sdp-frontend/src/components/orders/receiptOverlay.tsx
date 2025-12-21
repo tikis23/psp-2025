@@ -175,8 +175,8 @@ const ReceiptOverlay: React.FC<ReceiptOverlayProps> = ({ order, onClose }) => {
                 </div>
 
                 <div className="flex gap-3 justify-end sticky bottom-0 bg-white pt-4 text-white">
-                    <Button variant="outline" onClick={printReceipt}>Print</Button>
-                    <Button onClick={onClose}>Close</Button>
+                    <Button className="text-white" variant="outline" onClick={printReceipt}>Print</Button>
+                    <Button className="text-white" onClick={onClose}>Close</Button>
                 </div>
             </CardContent>
         </Card>

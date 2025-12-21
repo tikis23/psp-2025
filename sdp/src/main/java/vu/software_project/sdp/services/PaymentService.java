@@ -89,14 +89,25 @@ public class PaymentService {
         BigDecimal alreadyPaid = calculatePaidAmount(orderId);
         BigDecimal remainingBefore = maxZero(total.subtract(alreadyPaid));
 
-        if (remainingBefore.signum() == 0) {
-            throw new IllegalArgumentException("Order is already fully paid");
+        Long merchantId = order.getMerchantId();
+        String code = request.getGiftCardCode().trim();
+
+        GiftCard before = giftCardService.getByCode(merchantId, code);
+
+        if (!before.getActive()) {
+            throw new IllegalStateException("GIFT_CARD_INACTIVE");
         }
 
-        BigDecimal amountToCharge = remainingBefore;
+        BigDecimal cardBalance = before.getCurrentBalance();
+        if (cardBalance == null || cardBalance.signum() <= 0) {
+            throw new IllegalArgumentException("INSUFFICIENT_GIFT_CARD_BALANCE");
+        }
+
+        BigDecimal amountToCharge = remainingBefore.min(cardBalance);
 
         GiftCard card = giftCardService.deduct(
-                request.getGiftCardCode().trim(),
+                merchantId,
+                code,
                 amountToCharge
         );
 
@@ -113,7 +124,7 @@ public class PaymentService {
 
         payment = paymentRepository.save(payment);
 
-        BigDecimal remainingAfter = BigDecimal.ZERO;
+        BigDecimal remainingAfter = remainingBefore.subtract(amountToCharge);
 
         closeOrderIfPaid(order, remainingAfter);
 
@@ -130,6 +141,7 @@ public class PaymentService {
                 .giftCardCode(card.getCode())
                 .remainingCardBalance(card.getCurrentBalance())
                 .build();
+
     }
 
     private Order loadOrder(Long orderId) {
