@@ -44,7 +44,9 @@ const OrdersPage = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {orders.map((order) => (
+                                {orders
+                                    .sort((a, b) => b.id - a.id)
+                                    .map((order) => (
                                     <tr key={order.id}>
                                         <td className="border px-4 py-2 text-center">{order.id}</td>
                                         <td className="border px-4 py-2 text-center">{order.status}</td>

@@ -29,12 +29,16 @@ const ModifyOrderPage = () => {
     const [showPaymentOverlay, setShowPaymentOverlay] = useState(false)
     const [showReceiptOverlay, setShowReceiptOverlay] = useState(false)
 
-    useEffect(() => {
-        setCurrentOrder(null)
-        if (!orderId) {
-            toast.error("No order ID provided.")
-            return
-        }
+  useEffect(() => {
+    setCurrentOrder(null)
+    if (!orderId) {
+      toast.error("No order ID provided.")
+      return
+    }
+    if (!user?.merchantId) {
+      toast.error("User not associated with a merchant. Please try again.")
+      return
+    }
 
         const numberOrderId = Number(orderId)
         if (isNaN(numberOrderId)) {
