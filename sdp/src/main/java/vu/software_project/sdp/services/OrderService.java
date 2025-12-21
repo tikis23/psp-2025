@@ -6,7 +6,9 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +28,27 @@ public class OrderService {
     private final ProductVariationRepository variationRepository;
     private final TaxRateRepository taxRateRepository;
     private final DiscountRepository discountRepository;
+    private final AuditService auditService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
-    public OrderDTO createOrder(CreateOrderRequestDTO request) {
+    public OrderDTO createOrder(CreateOrderRequestDTO request, Long userId, Long merchantId) {
         Order order = new Order();
         order.setMerchantId(request.getMerchantId());
         order.setStatus(Order.Status.OPEN);
         order = orderRepository.save(order);
+
+        // Audit log: order created
+        auditService.logAction(
+                userId,
+                "order.created",
+                "Order",
+                order.getId(),
+                merchantId,
+                null,
+                buildOrderAuditData(order)
+        );
+
         return mapToOrderDTO(order);
     }
 
@@ -60,17 +76,29 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderDTO updateOrderStatus(Long orderId, Order.Status status) {
+    public OrderDTO updateOrderStatus(Long orderId, Order.Status status, Long userId, Long merchantId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         order.setStatus(order.getStatus().transitionTo(status));
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
+
+        // Audit log: order created
+        auditService.logAction(
+                userId,
+                "order.status_changed",
+                "Order",
+                order.getId(),
+                merchantId,
+                null,
+                buildOrderAuditData(order)
+        );
+
         return mapToOrderDTO(order);
     }
 
     @Transactional
-    public OrderDTO updateOrderItemQuantity(Long orderId, Long itemId, Long quantity) {
+    public OrderDTO updateOrderItemQuantity(Long orderId, Long itemId, Long quantity, Long userId, Long merchantId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         if (!order.getStatus().equals(Order.Status.OPEN)) {
@@ -86,11 +114,23 @@ public class OrderService {
         calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
+
+        // Audit log: order created
+        auditService.logAction(
+                userId,
+                "order.updated",
+                "Order",
+                order.getId(),
+                merchantId,
+                null,
+                buildOrderAuditData(order)
+        );
+
         return mapToOrderDTO(order);
     }
 
     @Transactional
-    public OrderDTO removeItemFromOrder(Long orderId, Long itemId) {
+    public OrderDTO removeItemFromOrder(Long orderId, Long itemId, Long userId, Long merchantId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         if (!order.getStatus().equals(Order.Status.OPEN)) {
@@ -101,18 +141,30 @@ public class OrderService {
         calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
+
+        // Audit log: order created
+        auditService.logAction(
+                userId,
+                "order.updated",
+                "Order",
+                order.getId(),
+                merchantId,
+                null,
+                buildOrderAuditData(order)
+        );
+
         return mapToOrderDTO(order);
     }
 
     @Transactional
-    public OrderDTO addItemToOrder(Long orderId, OrderAddItemRequestDTO request) {
+    public OrderDTO addItemToOrder(Long orderId, OrderAddItemRequestDTO request, Long userId, Long merchantId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
         if (!order.getStatus().equals(Order.Status.OPEN)) {
             throw new IllegalArgumentException("Cannot modify items of an order that is not OPEN");
         }
 
-        Long merchantId = order.getMerchantId();
         ItemResponseDTO item = productService.getProductById(request.getItemId(), merchantId);
 
         OrderItem orderItem = new OrderItem();
@@ -144,6 +196,17 @@ public class OrderService {
         calculateAndPersistDiscounts(order);
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
+
+        // Audit log: order created
+        auditService.logAction(
+                userId,
+                "order.updated",
+                "Order",
+                order.getId(),
+                merchantId,
+                null,
+                buildOrderAuditData(order)
+        );
 
         return mapToOrderDTO(order);
     }
@@ -350,4 +413,9 @@ public class OrderService {
                 .updatedAt(order.getUpdatedAt())
                 .build();
     }
+
+    private Map buildOrderAuditData(Order order) {
+        return objectMapper.convertValue(order, Map.class);
+    }
+
 }
