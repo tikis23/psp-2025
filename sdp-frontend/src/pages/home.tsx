@@ -32,7 +32,7 @@ const HomePage = () => {
                 onClick={() => {
                     createOrder(user.merchantId!).then((order) => {
                       toast.success("New order Opened");
-                      navigate(`/modifyOrder/${order.id}`);
+                      navigate(`/orders/${order.id}`);
                     }).catch((error) => {
                       toast.error("Failed to create a new order. Please try again.");
                       console.error("Error creating order:", error);
