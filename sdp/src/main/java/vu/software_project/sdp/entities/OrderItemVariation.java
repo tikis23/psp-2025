@@ -6,6 +6,8 @@ import java.time.OffsetDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,10 +26,12 @@ public class OrderItemVariation {
 
     @ManyToOne
     @JoinColumn(name = "order_item_id", nullable = false)
+    @JsonIgnore
     private OrderItem orderItem;
 
-    @Column(nullable = false)
     private Long productVariationId;
+
+    private String name;
     
     @Column(nullable = false)
     private BigDecimal priceOffset;
