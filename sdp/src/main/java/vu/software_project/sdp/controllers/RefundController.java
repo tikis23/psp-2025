@@ -14,21 +14,12 @@ public class RefundController {
 
     private final RefundService refundService;
 
-    @PostMapping("/orders/{orderId}/refunds")
+    @PostMapping("/orders/{orderId}/refund")
     public ResponseEntity<RefundResponseDTO> createRefund(
             @PathVariable Long orderId,
-            @RequestBody CreateRefundRequestDTO request
-    ) {
-        RefundResponseDTO response =
-                refundService.createFullRefund(orderId, request.getReason());
+            @RequestBody CreateRefundRequestDTO request) {
+        RefundResponseDTO response = refundService.createFullRefund(orderId, request.getReason());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @GetMapping("/refunds/{refundId}")
-    public ResponseEntity<RefundResponseDTO> getRefund(
-            @PathVariable Long refundId
-    ) {
-        return ResponseEntity.ok(refundService.getRefund(refundId));
     }
 }

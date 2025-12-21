@@ -9,7 +9,7 @@ import vu.software_project.sdp.DTOs.payments.*;
 import vu.software_project.sdp.services.PaymentService;
 
 @RestController
-@RequestMapping("/api/orders/{orderId}/payments")
+@RequestMapping("/api/orders/{orderId}/pay")
 @RequiredArgsConstructor
 public class PaymentController {
 
@@ -18,8 +18,7 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<?> createPayment(
             @PathVariable Long orderId,
-            @RequestBody @NotNull PaymentRequestDTO request
-    ) {
+            @RequestBody @NotNull PaymentRequestDTO request) {
         String type = request.getPaymentType();
         if (type == null) {
             return ResponseEntity.badRequest().body("payment_type is required (CASH, GIFT_CARD, ...)");
@@ -37,5 +36,3 @@ public class PaymentController {
         };
     }
 }
-
-

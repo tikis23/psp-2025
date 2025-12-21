@@ -41,8 +41,10 @@ public class RefundService {
 
         for (Payment payment : payments) {
 
-            if (payment.getStatus() != Payment.Status.SUCCEEDED) continue;
-            if (payment.getPaymentType() == Payment.PaymentType.GIFT_CARD) continue;
+            if (payment.getStatus() != Payment.Status.SUCCEEDED)
+                continue;
+            if (payment.getPaymentType() == Payment.PaymentType.GIFT_CARD)
+                continue;
 
             payment.setStatus(Payment.Status.REFUNDED);
             payment.setUpdatedAt(OffsetDateTime.now());
@@ -57,13 +59,11 @@ public class RefundService {
                     .refundStatus(
                             payment.getPaymentType() == Payment.PaymentType.CARD
                                     ? "processing"
-                                    : "completed"
-                    )
+                                    : "completed")
                     .stripeRefundId(
                             payment.getPaymentType() == Payment.PaymentType.CARD
                                     ? "re_mocked"
-                                    : null
-                    )
+                                    : null)
                     .build());
         }
 
@@ -89,22 +89,6 @@ public class RefundService {
                 .status(refund.getStatus().name().toLowerCase())
                 .createdAt(refund.getCreatedAt())
                 .refundBreakdown(breakdown)
-                .build();
-    }
-
-    @Transactional(readOnly = true)
-    public RefundResponseDTO getRefund(Long refundId) {
-
-        Refund refund = refundRepository.findById(refundId)
-                .orElseThrow(() -> new IllegalArgumentException("REFUND_NOT_FOUND"));
-
-        return RefundResponseDTO.builder()
-                .refundId("ref_" + refund.getId())
-                .orderId(refund.getOrderId().toString())
-                .totalAmount(refund.getTotalAmount())
-                .status(refund.getStatus().name().toLowerCase())
-                .createdAt(refund.getCreatedAt())
-                .refundBreakdown(List.of())
                 .build();
     }
 }

@@ -23,15 +23,9 @@ export const createRefund = (
     orderId: number,
     reason: string
 ): Promise<RefundResponse> => {
-    return fetchApi<RefundResponse>(`/api/orders/${orderId}/refunds`, {
+    return fetchApi<RefundResponse>(`/api/orders/${orderId}/refund`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
     });
 };
-
-export const getRefund = (refundId: string): Promise<RefundResponse> => {
-    return fetchApi<RefundResponse>(`/api/refunds/${encodeURIComponent(refundId)}`, {
-        method: "GET",
-    })
-}
