@@ -428,6 +428,7 @@ public class OrderService {
                             .quantity(item.getQuantity())
                             .variations(varDTOs)
                             .appliedDiscountAmount(item.getAppliedDiscountAmount())
+                            .appliedTaxRate(item.getAppliedTaxRate())
                             .build();
                 }).toList();
 
@@ -451,12 +452,9 @@ public class OrderService {
                 .subtotal(costInfo.getSubtotal())
                 .taxAmount(costInfo.getTaxAmount())
                 .discountAmount(costInfo.getDiscountAmount())
-                .discountId(order.getDiscountId())
                 .total(costInfo.getTotal())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
-                .taxBreakdown(costInfo.getTaxBreakdown())
-                .discountBreakdown(costInfo.getDiscountBreakdown())
                 .build();
     }
 

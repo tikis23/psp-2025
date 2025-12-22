@@ -33,6 +33,17 @@ public class ReservationService {
             throw new IllegalArgumentException("Cannot book appointments in the past");
         }
 
+        LocalDateTime requestedTime = request.getAppointmentTime();
+        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeBetweenAndStatus(
+                request.getEmployeeId(),
+                requestedTime.minusMinutes(59),
+                requestedTime.plusMinutes(59),
+                Status.CONFIRMED
+        );
+        if (!conflicts.isEmpty()) {
+            throw new IllegalArgumentException("Time slot already booked for this employee.");
+        }
+
         Reservation reservation = new Reservation();
         reservation.setMerchantId(merchantId);
         reservation.setServiceId(request.getServiceId());
@@ -59,6 +70,19 @@ public class ReservationService {
 
         if (reservation.getStatus() != Status.CONFIRMED) {
             throw new IllegalArgumentException("Only confirmed reservations can be modified");
+        }
+
+        LocalDateTime requestedTime = request.getAppointmentTime();
+        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeBetweenAndStatus(
+                request.getEmployeeId(),
+                requestedTime.minusMinutes(59),
+                requestedTime.plusMinutes(59),
+                Status.CONFIRMED
+        );
+
+        boolean hasConflict = conflicts.stream().anyMatch(r -> !r.getId().equals(id));
+        if (hasConflict) {
+            throw new IllegalArgumentException("Time slot already booked for this employee.");
         }
 
         reservation.setServiceId(request.getServiceId());
@@ -105,7 +129,6 @@ public class ReservationService {
         String employeeName = userRepository.findById(res.getEmployeeId())
                 .map(User::getName)
                 .orElse("Unknown Employee");
-
 
         return ReservationResponseDto.builder()
                 .id(res.getId())
