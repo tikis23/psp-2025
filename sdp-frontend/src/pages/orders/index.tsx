@@ -5,6 +5,14 @@ import { getAllOrders, type OrderInfo } from "@/services/orderService"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 
 const OrdersPage = () => {
     const [orders, setOrders] = useState<OrderInfo[]>([]);
@@ -24,8 +32,8 @@ const OrdersPage = () => {
     }, []);
 
     return (
-        <div className="w-full flex gap-4">
-            <Card className="w-full shadow-lg">
+        <div className="w-full flex items-center justify-center gap-4">
+            <Card className="w-3/4 shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">Orders</CardTitle>
                 </CardHeader>
@@ -33,39 +41,39 @@ const OrdersPage = () => {
                     {orders.length === 0 ? (
                         <p className="text-center text-gray-500">No orders found.</p>
                     ) : (
-                        <table className="w-full table-auto border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="border px-4 py-2">Order ID</th>
-                                    <th className="border px-4 py-2">Status</th>
-                                    <th className="border px-4 py-2">Created At</th>
-                                    <th className="border px-4 py-2">Updated At</th>
-                                    <th className="border px-4 py-2">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table className="w-full table-auto border-collapse">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Order ID</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Created At</TableHead>
+                                    <TableHead>Updated At</TableHead>
+                                    <TableHead>Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {orders
                                     .sort((a, b) => b.id - a.id)
                                     .map((order) => (
-                                    <tr key={order.id}>
-                                        <td className="border px-4 py-2 text-center">{order.id}</td>
-                                        <td className="border px-4 py-2 text-center">{order.status}</td>
-                                        <td className="border px-4 py-2 text-center">{new Date(order.createdAt).toLocaleString()}</td>
-                                        <td className="border px-4 py-2 text-center">{new Date(order.updatedAt).toLocaleString()}</td>
-                                        <td className="border px-4 py-2 text-center">
-                                            <Button
-                                                className="flex-1"
-                                                onClick={() => navigate(`/orders/${order.id}`)}
-                                            >
-                                                {
-                                                    order.status === "OPEN" ? "Modify" : "View"
-                                                }
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        <TableRow key={order.id}>
+                                            <TableCell>{order.id}</TableCell>
+                                            <TableCell>{order.status}</TableCell>
+                                            <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                                            <TableCell>{new Date(order.updatedAt).toLocaleString()}</TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    className="flex-1"
+                                                    onClick={() => navigate(`/orders/${order.id}`)}
+                                                >
+                                                    {
+                                                        order.status === "OPEN" ? "Modify" : "View"
+                                                    }
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                            </TableBody>
+                        </Table>
                     )}
                 </CardContent>
             </Card>

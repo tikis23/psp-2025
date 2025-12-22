@@ -34,16 +34,16 @@ const ModifyOrderPage = () => {
     const [showPaymentOverlay, setShowPaymentOverlay] = useState(false)
     const [showReceiptOverlay, setShowReceiptOverlay] = useState(false)
 
-  useEffect(() => {
-    setCurrentOrder(null)
-    if (!orderId) {
-      toast.error("No order ID provided.")
-      return
-    }
-    if (!user?.merchantId) {
-      toast.error("User not associated with a merchant. Please try again.")
-      return
-    }
+    useEffect(() => {
+        setCurrentOrder(null)
+        if (!orderId) {
+            toast.error("No order ID provided.")
+            return
+        }
+        if (!user?.merchantId) {
+            toast.error("User not associated with a merchant. Please try again.")
+            return
+        }
 
         const numberOrderId = Number(orderId)
         if (isNaN(numberOrderId)) {
@@ -136,7 +136,7 @@ const ModifyOrderPage = () => {
     }
 
     return (
-        <div className="w-full flex gap-4">
+        <div className="w-full px-16 flex gap-4">
             {showPaymentOverlay && currentOrder && (
                 <div className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
                     <div
@@ -144,31 +144,31 @@ const ModifyOrderPage = () => {
                         onClick={() => setShowPaymentOverlay(false)}
                     />
                     <div className="fixed z-50">
-                    <Elements stripe={stripePromise}>
-                        <PaymentOverlay
-                            order={currentOrder}
-                            onPaid={async () => {
-                                try {
-                                    const updated = await getOrder(currentOrder.id)
-                                    setCurrentOrder(updated)
-                                } catch (err) {
-                                    console.error("Failed to refresh order after payment:", err)
-                                    toast.error("Payment saved, but failed to refresh order.")
-                                } finally {
-                                    setShowPaymentOverlay(false)
-                                    setShowReceiptOverlay(true)
-                                }
-                            }}
-                            onProgress={async () => {
-                                try {
-                                    const updated = await getOrder(currentOrder.id)
-                                    setCurrentOrder(updated)
-                                } catch (err) {
-                                    console.error("Failed to refresh order:", err)
-                                }
-                            }}
-                        />
-                    </Elements>
+                        <Elements stripe={stripePromise}>
+                            <PaymentOverlay
+                                order={currentOrder}
+                                onPaid={async () => {
+                                    try {
+                                        const updated = await getOrder(currentOrder.id)
+                                        setCurrentOrder(updated)
+                                    } catch (err) {
+                                        console.error("Failed to refresh order after payment:", err)
+                                        toast.error("Payment saved, but failed to refresh order.")
+                                    } finally {
+                                        setShowPaymentOverlay(false)
+                                        setShowReceiptOverlay(true)
+                                    }
+                                }}
+                                onProgress={async () => {
+                                    try {
+                                        const updated = await getOrder(currentOrder.id)
+                                        setCurrentOrder(updated)
+                                    } catch (err) {
+                                        console.error("Failed to refresh order:", err)
+                                    }
+                                }}
+                            />
+                        </Elements>
                     </div>
                 </div>
             )}

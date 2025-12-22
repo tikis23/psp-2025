@@ -268,200 +268,194 @@ export default function ItemsPage() {
                 </form>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                    <h2 className="text-xl font-semibold mb-4">Your Items</h2>
-                    {isLoading ? (
-                        <div className="text-center py-8 text-gray-500">Loading...</div>
-                    ) : items.length === 0 ? (
-                        <Card className="p-8 text-center">
-                            <p className="text-gray-500">
-                                No items yet.
-                            </p>
-                        </Card>
-                    ) : (
-                        <div className="space-y-4">
-                            {items.map((item) => (
-                                <Card
-                                    key={item.id}
-                                    className={`p-4 cursor-pointer transition-all ${
-                                        selectedItemId === item.id
-                                            ? "ring-2 ring-blue-500"
-                                            : "hover:shadow-md"
+            <h2 className="text-xl font-semibold mb-4">Your Items</h2>
+            <div className="w-full flex flex-row gap-4">
+                {isLoading ? (
+                    <div className="text-center py-8 text-gray-500">Loading...</div>
+                ) : items.length === 0 ? (
+                    <Card className="p-8 text-center">
+                        <p className="text-gray-500">
+                            No items yet.
+                        </p>
+                    </Card>
+                ) : (
+                    <div className="w-1/2 space-y-4">
+                        {items.map((item) => (
+                            <Card
+                                key={item.id}
+                                className={`p-4 cursor-pointer transition-all ${selectedItemId === item.id
+                                    ? "ring-2 ring-blue-500"
+                                    : "hover:shadow-md"
                                     }`}
-                                    onClick={() => {
-                                        if (item.type === "PRODUCT") {
-                                            loadVariations(item.id)
-                                        } else {
-                                            setSelectedItemId(null)
-                                            toast.info("Services don't have variations")
-                                        }
-                                    }}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h3 className="font-semibold text-lg">{item.name}</h3>
-                                                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {item.type === "PRODUCT" ? "Product" : "Service"}
-                        </span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-green-600">
-                                                ${item.price.toFixed(2)}
-                                            </p>
-                                            {item.taxRateId && (
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    Tax ID: {item.taxRateId}
-                                                </p>
-                                            )}
+                                onClick={() => {
+                                    if (item.type === "PRODUCT") {
+                                        loadVariations(item.id)
+                                    } else {
+                                        setSelectedItemId(null)
+                                        toast.info("Services don't have variations")
+                                    }
+                                }}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="font-semibold text-lg">{item.name}</h3>
+                                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                                {item.type === "PRODUCT" ? "Product" : "Service"}
+                                            </span>
                                         </div>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleDelete(item.id)
-                                            }}
-                                        >
-                                            Delete
-                                        </Button>
+                                        <p className="text-2xl font-bold text-green-600">
+                                            ${item.price.toFixed(2)}
+                                        </p>
+                                        {item.taxRateId && (
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Tax ID: {item.taxRateId}
+                                            </p>
+                                        )}
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div>
-                    {selectedItemId ? (
-                        <Card className="p-6">
-                            <h2 className="text-xl font-semibold mb-4">
-                                Product Variations
-                            </h2>
-
-                            <form onSubmit={handleCreateVariation} className="space-y-4 mb-6">
-                                <div>
-                                    <Label htmlFor="varName">Variation Name</Label>
-                                    <Input
-                                        id="varName"
-                                        value={newVariation.name}
-                                        onChange={(e) =>
-                                            setNewVariation({ ...newVariation, name: e.target.value })
-                                        }
-                                        placeholder="e.g., Large Size"
-                                        required
-                                    />
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleDelete(item.id)
+                                        }}
+                                    >
+                                        Delete
+                                    </Button>
                                 </div>
-                                <div>
-                                    <Label htmlFor="varOffset">Price Offset</Label>
-                                    <Input
-                                        id="varOffset"
-                                        type="number"
-                                        step="0.01"
-                                        value={newVariation.priceOffset || ""}
-                                        onChange={(e) =>
-                                            setNewVariation({
-                                                ...newVariation,
-                                                priceOffset: parseFloat(e.target.value) || 0,
-                                            })
-                                        }
-                                        placeholder="0.00"
-                                        required
-                                    />
-                                </div>
-                                <Button type="submit" className="w-full">
-                                    Add Variation
-                                </Button>
-                            </form>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+                {selectedItemId ? (
+                    <Card className="w-1/2 p-6">
+                        <h2 className="text-xl font-semibold mb-4">
+                            Product Variations
+                        </h2>
 
-                            <div className="space-y-2">
-                                <h3 className="font-medium">Existing Variations</h3>
-                                {variations.length === 0 ? (
-                                    <p className="text-gray-500 text-sm">No variations yet</p>
-                                ) : (
-                                    variations.map((v) => (
-                                        <div
-                                            key={v.id}
-                                            className="border rounded p-3 flex justify-between items-center"
-                                        >
-                                            {editingVariation?.id === v.id ? (
-                                                <form
-                                                    onSubmit={handleUpdateVariation}
-                                                    className="flex-1 flex gap-2"
+                        <form onSubmit={handleCreateVariation} className="space-y-4 mb-6">
+                            <div>
+                                <Label htmlFor="varName">Variation Name</Label>
+                                <Input
+                                    id="varName"
+                                    value={newVariation.name}
+                                    onChange={(e) =>
+                                        setNewVariation({ ...newVariation, name: e.target.value })
+                                    }
+                                    placeholder="e.g., Large Size"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="varOffset">Price Offset</Label>
+                                <Input
+                                    id="varOffset"
+                                    type="number"
+                                    step="0.01"
+                                    value={newVariation.priceOffset || ""}
+                                    onChange={(e) =>
+                                        setNewVariation({
+                                            ...newVariation,
+                                            priceOffset: parseFloat(e.target.value) || 0,
+                                        })
+                                    }
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+                            <Button type="submit" className="w-full">
+                                Add Variation
+                            </Button>
+                        </form>
+
+                        <div className="space-y-2">
+                            <h3 className="font-medium">Existing Variations</h3>
+                            {variations.length === 0 ? (
+                                <p className="text-gray-500 text-sm">No variations yet</p>
+                            ) : (
+                                variations.map((v) => (
+                                    <div
+                                        key={v.id}
+                                        className="border rounded p-3 flex justify-between items-center"
+                                    >
+                                        {editingVariation?.id === v.id ? (
+                                            <form
+                                                onSubmit={handleUpdateVariation}
+                                                className="flex-1 flex gap-2"
+                                            >
+                                                <Input
+                                                    value={editingVariation.name}
+                                                    onChange={(e) =>
+                                                        setEditingVariation({
+                                                            ...editingVariation,
+                                                            name: e.target.value,
+                                                        })
+                                                    }
+                                                    className="flex-1"
+                                                />
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={editingVariation.priceOffset}
+                                                    onChange={(e) =>
+                                                        setEditingVariation({
+                                                            ...editingVariation,
+                                                            priceOffset: parseFloat(e.target.value),
+                                                        })
+                                                    }
+                                                    className="w-24"
+                                                />
+                                                <Button type="submit" size="sm">
+                                                    Save
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => setEditingVariation(null)}
                                                 >
-                                                    <Input
-                                                        value={editingVariation.name}
-                                                        onChange={(e) =>
-                                                            setEditingVariation({
-                                                                ...editingVariation,
-                                                                name: e.target.value,
-                                                            })
-                                                        }
-                                                        className="flex-1"
-                                                    />
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={editingVariation.priceOffset}
-                                                        onChange={(e) =>
-                                                            setEditingVariation({
-                                                                ...editingVariation,
-                                                                priceOffset: parseFloat(e.target.value),
-                                                            })
-                                                        }
-                                                        className="w-24"
-                                                    />
-                                                    <Button type="submit" size="sm">
-                                                        Save
-                                                    </Button>
+                                                    Cancel
+                                                </Button>
+                                            </form>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <p className="font-medium">{v.name}</p>
+                                                    <p className="text-sm text-gray-600">
+                                                        +${v.priceOffset.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-2">
                                                     <Button
-                                                        type="button"
                                                         size="sm"
                                                         variant="outline"
-                                                        onClick={() => setEditingVariation(null)}
+                                                        onClick={() => setEditingVariation(v)}
                                                     >
-                                                        Cancel
+                                                        Edit
                                                     </Button>
-                                                </form>
-                                            ) : (
-                                                <>
-                                                    <div>
-                                                        <p className="font-medium">{v.name}</p>
-                                                        <p className="text-sm text-gray-600">
-                                                            +${v.priceOffset.toFixed(2)}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => setEditingVariation(v)}
-                                                        >
-                                                            Edit
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => handleDeleteVariation(v.id)}
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </Card>
-                    ) : (
-                        <Card className="p-8 text-center">
-                            <p className="text-gray-500">
-                                Click on a product to manage its variations
-                            </p>
-                        </Card>
-                    )}
-                </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => handleDeleteVariation(v.id)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </Card>
+                ) : (
+                    <Card className="p-8 text-center">
+                        <p className="text-gray-500">
+                            Click on a product to manage its variations
+                        </p>
+                    </Card>
+                )}
             </div>
         </div>
     )

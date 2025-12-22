@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Item, ProductVariation } from "@/types";
 
@@ -34,17 +34,13 @@ const ItemMenu = ({ items, onAddItem }: ItemMenuProps) => {
         {items.map((item) => (
           <Card
             key={item.id}
-            className="cursor-pointer hover:shadow-xl transition"
             onClick={() => handleAddClick(item)}
           >
-            <CardContent className="p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-lg">{item.name}</h3>
-              </div>
-
-              <div className="flex justify-between items-center">
+            <CardHeader>
+              <CardTitle>{item.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
                 <span className="text-lg font-medium">${item.price.toFixed(2)}</span>
-              </div>
             </CardContent>
           </Card>
         ))}

@@ -3,6 +3,7 @@ import type { Order, OrderItem, OrderItemVariation } from "@/services/orderServi
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Percent } from "lucide-react";
 
 export interface OrderDetailsProps {
     order: Order;
@@ -28,12 +29,12 @@ function DiscountPopover({ onApply }: { onApply: (code: string) => void }) {
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-5 w-5 p-0 text-blue-500 rounded-full border border-blue-200 ml-2 hover:bg-blue-50"
+                    className="h-5 w-5 p-2 text-xs rounded-full border border-blue-200 ml-2 hover:bg-blue-50"
                     title="Apply Item Discount"
                 >
-                    %
+                     <Percent size={4} />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56 p-2" side="right">
@@ -44,7 +45,7 @@ function DiscountPopover({ onApply }: { onApply: (code: string) => void }) {
                         onChange={(e) => setCode(e.target.value)}
                         className="h-8 text-xs"
                     />
-                    <Button size="sm" onClick={handleSubmit} className="h-8">Apply</Button>
+                    <Button size="sm" onClick={handleSubmit} className="text-white h-8">Apply</Button>
                 </div>
             </PopoverContent>
         </Popover>
@@ -93,7 +94,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
             </div>
 
             {order.items.length > 0 && (
-                <div className="border-t pt-4 space-y-4 flex-1 overflow-y-auto min-h-[200px]">
+                <div className="pt-4 space-y-4 flex-1 overflow-y-auto min-h-[200px]">
                     <h3 className="text-lg font-semibold">Items</h3>
                     <div className="space-y-2">
                         {order.items.map((item: OrderItem) => {
@@ -168,7 +169,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                 </div>
             )}
 
-            <div className="border-t pt-4 space-y-2 text-sm bg-white mt-auto">
+            <div className="pt-4 space-y-2 text-sm bg-white mt-auto">
                 {onApplyOrderDiscount && order.status === "OPEN" && (
                     <div className="flex gap-2 mb-4">
                         <Input
@@ -177,7 +178,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                             onChange={(e) => setOrderDiscountCode(e.target.value)}
                             className="h-8 text-xs"
                         />
-                        <Button size="sm" onClick={handleOrderDiscountSubmit} className="h-8">
+                        <Button size="sm" variant="secondary" disabled={orderDiscountCode.trim() === ""} onClick={handleOrderDiscountSubmit} className="text-white h-8">
                             Apply
                         </Button>
                     </div>
@@ -251,7 +252,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                 </div>
             )}
 
-            <div className="border-t pt-4 flex gap-4 justify-end">
+            <div className="pt-4 flex gap-4 justify-end">
                 {onCancel && order.status === "OPEN" && (
                     <Button className="w-1/3" variant="destructive" onClick={onCancel}>Cancel</Button>
                 )}
@@ -260,7 +261,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                 )}
             </div>
 
-            <div className="border-t pt-4 text-xs text-muted-foreground space-y-1">
+            <div className="pt-4 text-xs text-muted-foreground space-y-1">
                 <p>Created: {new Date(order.createdAt).toLocaleString()}</p>
                 <p>Updated: {new Date(order.updatedAt).toLocaleString()}</p>
             </div>
