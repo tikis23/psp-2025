@@ -216,8 +216,8 @@ function CreateDiscountDialog({ onCreated, merchantId }: { onCreated: (discount:
 }
 
 function MerchantUsersDialog({
-                                 merchant,
-                             }: {
+    merchant,
+}: {
     merchant: Merchant
 }) {
     const [users, setUsers] = useState<User[]>([])
@@ -232,9 +232,9 @@ function MerchantUsersDialog({
 
     return (
         <Dialog>
-            <DialogTrigger className="w-full border p-4 rounded-lg hover:bg-gray-50 text-left">
+            <DialogTrigger className="w-full border p-4 rounded-lg text-white hover:bg-gray-50 text-left">
                 <div className="font-medium">{merchant.name}</div>
-                <div className="text-sm text-gray-600">{merchant.address}</div>
+                <div className="text-sm text-gray-200">{merchant.address}</div>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
