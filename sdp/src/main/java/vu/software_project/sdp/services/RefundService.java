@@ -44,8 +44,10 @@ public class RefundService {
 
         for (Payment payment : payments) {
 
-            if (payment.getStatus() != Payment.Status.SUCCEEDED) continue;
-            if (payment.getPaymentType() == Payment.PaymentType.GIFT_CARD) continue;
+            if (payment.getStatus() != Payment.Status.SUCCEEDED)
+                continue;
+            if (payment.getPaymentType() == Payment.PaymentType.GIFT_CARD)
+                continue;
 
             String refundId = null;
             if (payment.getPaymentType() == Payment.PaymentType.CARD) {
@@ -105,22 +107,6 @@ public class RefundService {
                 .status(refund.getStatus().name().toLowerCase())
                 .createdAt(refund.getCreatedAt())
                 .refundBreakdown(breakdown)
-                .build();
-    }
-
-    @Transactional(readOnly = true)
-    public RefundResponseDTO getRefund(Long refundId) {
-
-        Refund refund = refundRepository.findById(refundId)
-                .orElseThrow(() -> new IllegalArgumentException("REFUND_NOT_FOUND"));
-
-        return RefundResponseDTO.builder()
-                .refundId("ref_" + refund.getId())
-                .orderId(refund.getOrderId().toString())
-                .totalAmount(refund.getTotalAmount())
-                .status(refund.getStatus().name().toLowerCase())
-                .createdAt(refund.getCreatedAt())
-                .refundBreakdown(List.of())
                 .build();
     }
 }

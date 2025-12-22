@@ -54,7 +54,7 @@ export const createCashPayment = (
     amount: number,
     tip?: number
 ): Promise<CashPaymentResponse> => {
-    return fetchApi<CashPaymentResponse>(`/api/orders/${orderId}/payments`, {
+    return fetchApi<CashPaymentResponse>(`/api/orders/${orderId}/pay`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -72,7 +72,7 @@ export const createGiftCardPayment = (
     giftCardCode: string,
     tip?: number
 ): Promise<GiftCardPaymentResponse> => {
-    return fetchApi<GiftCardPaymentResponse>(`/api/orders/${orderId}/payments`, {
+    return fetchApi<GiftCardPaymentResponse>(`/api/orders/${orderId}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
