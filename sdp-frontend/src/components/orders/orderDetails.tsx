@@ -177,7 +177,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                             onChange={(e) => setOrderDiscountCode(e.target.value)}
                             className="h-8 text-xs"
                         />
-                        <Button size="sm" variant="secondary" onClick={handleOrderDiscountSubmit} className="h-8">
+                        <Button size="sm" onClick={handleOrderDiscountSubmit} className="h-8">
                             Apply
                         </Button>
                     </div>
