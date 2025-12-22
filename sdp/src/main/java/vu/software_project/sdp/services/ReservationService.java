@@ -1,5 +1,6 @@
 package vu.software_project.sdp.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,9 +28,11 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final ServiceItemRepository serviceItemRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
-    public ReservationResponseDto createReservation(ReservationCreateRequestDto request, Long merchantId) {
+    public ReservationResponseDto createReservation(ReservationCreateRequestDto request, Long userId, Long merchantId) {
         if (request.getAppointmentTime().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Cannot book appointments in the past");
         }
@@ -56,11 +60,21 @@ public class ReservationService {
 
         Reservation saved = reservationRepository.save(reservation);
 
+        auditService.logAction(
+                userId,
+                "reservation.created",
+                "Reservation",
+                reservation.getId(),
+                merchantId,
+                null,
+                buildReservationAuditData(reservation)
+        );
+
         return mapToDto(saved);
     }
 
     @Transactional
-    public ReservationResponseDto updateReservation(Long id, ReservationCreateRequestDto request, Long merchantId) {
+    public ReservationResponseDto updateReservation(Long id, ReservationCreateRequestDto request, Long userId, Long merchantId) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
@@ -92,6 +106,17 @@ public class ReservationService {
         reservation.setAppointmentTime(request.getAppointmentTime());
 
         Reservation updated = reservationRepository.save(reservation);
+
+        auditService.logAction(
+                userId,
+                "reservation.updated",
+                "Reservation",
+                reservation.getId(),
+                merchantId,
+                null,
+                buildReservationAuditData(reservation)
+        );
+
         return mapToDto(updated);
     }
 
@@ -143,4 +168,9 @@ public class ReservationService {
                 .status(res.getStatus().name())
                 .build();
     }
+
+    private Map buildReservationAuditData(Reservation reservation) {
+        return objectMapper.convertValue(reservation, Map.class);
+    }
+
 }
