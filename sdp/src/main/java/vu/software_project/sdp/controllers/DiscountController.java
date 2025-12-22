@@ -23,4 +23,10 @@ public class DiscountController {
     public ResponseEntity<Discount> createDiscount(@RequestBody Discount discount) {
         return ResponseEntity.ok(discountRepository.save(discount));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDiscount(@PathVariable String id) {
+        discountRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

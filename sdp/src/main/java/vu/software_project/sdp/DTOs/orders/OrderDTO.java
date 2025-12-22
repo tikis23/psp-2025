@@ -21,6 +21,9 @@ public class OrderDTO {
     private BigDecimal taxAmount;
     private BigDecimal discountAmount;
     private BigDecimal total;
+    private String discountId;
+    private List<String> taxBreakdown;
+    private List<String> discountBreakdown;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

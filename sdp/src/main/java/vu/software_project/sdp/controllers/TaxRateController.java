@@ -1,4 +1,3 @@
-// File: main/java/vu/software_project/sdp/controllers/TaxRateController.java
 package vu.software_project.sdp.controllers;
 
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,10 @@ public class TaxRateController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTaxRate(@PathVariable String id) {
-        taxRateRepository.deleteById(id);
+        taxRateRepository.findById(id).ifPresent(taxRate -> {
+            taxRate.setActive(false);
+            taxRateRepository.save(taxRate);
+        });
         return ResponseEntity.noContent().build();
     }
 }

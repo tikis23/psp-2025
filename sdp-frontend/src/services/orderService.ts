@@ -45,6 +45,8 @@ export interface Order {
     discountId?: string;
     createdAt: string;
     updatedAt: string;
+    taxBreakdown?: string[];
+    discountBreakdown?: string[];
 }
 
 export interface OrderInfo {

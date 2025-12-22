@@ -37,7 +37,6 @@ public class OrderService {
         order.setStatus(Order.Status.OPEN);
         order = orderRepository.save(order);
 
-        // Audit log: order created
         auditService.logAction(
                 userId,
                 "order.created",
@@ -82,7 +81,6 @@ public class OrderService {
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
-        // Audit log: order created
         auditService.logAction(
                 userId,
                 "order.status_changed",
@@ -114,7 +112,6 @@ public class OrderService {
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
-        // Audit log: order created
         auditService.logAction(
                 userId,
                 "order.updated",
@@ -141,7 +138,6 @@ public class OrderService {
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
-        // Audit log: order created
         auditService.logAction(
                 userId,
                 "order.updated",
@@ -198,7 +194,6 @@ public class OrderService {
         order.setUpdatedAt(OffsetDateTime.now());
         order = orderRepository.save(order);
 
-        // Audit log: order created
         auditService.logAction(
                 userId,
                 "order.updated",
@@ -326,8 +321,12 @@ public class OrderService {
     }
 
     public OrderCostInfoDTO calculateOrderCosts(Order order) {
-        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal grossSubtotal = BigDecimal.ZERO;
         BigDecimal taxAmount = BigDecimal.ZERO;
+        BigDecimal totalItemDiscounts = BigDecimal.ZERO;
+
+        Map<String, BigDecimal> taxAccumulator = new HashMap<>();
+        List<String> discountDetails = new ArrayList<>();
 
         for (OrderItem item : order.getItems()) {
             BigDecimal qty = BigDecimal.valueOf(item.getQuantity());
@@ -336,15 +335,32 @@ public class OrderService {
                 base = base.add(v.getPriceOffset());
             }
             BigDecimal lineGross = base.multiply(qty);
+
+            grossSubtotal = grossSubtotal.add(lineGross);
+
             BigDecimal lineDisc = item.getAppliedDiscountAmount();
             if (lineDisc == null) {
                 lineDisc = BigDecimal.ZERO;
             }
+            totalItemDiscounts = totalItemDiscounts.add(lineDisc);
+
             BigDecimal taxable = lineGross.subtract(lineDisc);
 
-            subtotal = subtotal.add(taxable);
             if (item.getAppliedTaxRate() != null) {
-                taxAmount = taxAmount.add(taxable.multiply(item.getAppliedTaxRate()));
+                BigDecimal t = taxable.multiply(item.getAppliedTaxRate());
+                taxAmount = taxAmount.add(t);
+
+                String key = item.getTaxRateId() != null ? item.getTaxRateId() : "unknown";
+                taxAccumulator.put(key, taxAccumulator.getOrDefault(key, BigDecimal.ZERO).add(t));
+            }
+
+            if (lineDisc.compareTo(BigDecimal.ZERO) > 0 && item.getDiscountId() != null) {
+                discountRepository.findById(item.getDiscountId()).ifPresent(d -> {
+                    String desc = d.getType() == Discount.Type.PERCENTAGE
+                            ? String.format("%s (%.0f%% on %s): -%s", d.getCode(), d.getValue(), item.getName(), item.getAppliedDiscountAmount())
+                            : String.format("%s (Flat on %s): -%s", d.getCode(), item.getName(), item.getAppliedDiscountAmount());
+                    discountDetails.add(desc);
+                });
             }
         }
 
@@ -352,14 +368,43 @@ public class OrderService {
         if (orderDiscount == null) {
             orderDiscount = BigDecimal.ZERO;
         }
-        BigDecimal total = subtotal.add(taxAmount).subtract(orderDiscount);
+
+        if (orderDiscount.compareTo(BigDecimal.ZERO) > 0 && order.getDiscountId() != null) {
+            discountRepository.findById(order.getDiscountId()).ifPresent(d -> {
+                String desc = d.getType() == Discount.Type.PERCENTAGE
+                        ? String.format("%s (%.0f%% on Order): -%s", d.getCode(), d.getValue(), order.getAppliedDiscountAmount())
+                        : String.format("%s (Flat on Order): -%s", d.getCode(), order.getAppliedDiscountAmount());
+                discountDetails.add(desc);
+            });
+        }
+
+        BigDecimal totalDiscount = totalItemDiscounts.add(orderDiscount);
+
+        BigDecimal total = grossSubtotal.subtract(totalDiscount).add(taxAmount);
+
+        List<String> taxBreakdown = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : taxAccumulator.entrySet()) {
+            String label = "Tax";
+            BigDecimal rateVal = BigDecimal.ZERO;
+            if (!"unknown".equals(entry.getKey())) {
+                Optional<TaxRate> tr = taxRateRepository.findById(entry.getKey());
+                if (tr.isPresent()) {
+                    label = tr.get().getName();
+                    rateVal = tr.get().getRate();
+                }
+            }
+            String line = String.format("%s (%.0f%%): %s", label, rateVal.multiply(BigDecimal.valueOf(100)), entry.getValue().setScale(2, RoundingMode.HALF_UP));
+            taxBreakdown.add(line);
+        }
 
         return OrderCostInfoDTO.builder()
-            .subtotal(subtotal.setScale(2, RoundingMode.HALF_UP))
-            .taxAmount(taxAmount.setScale(2, RoundingMode.HALF_UP))
-            .discountAmount(orderDiscount.setScale(2, RoundingMode.HALF_UP))
-            .total(total.setScale(2, RoundingMode.HALF_UP))
-            .build();
+                .subtotal(grossSubtotal.setScale(2, RoundingMode.HALF_UP))
+                .taxAmount(taxAmount.setScale(2, RoundingMode.HALF_UP))
+                .discountAmount(totalDiscount.setScale(2, RoundingMode.HALF_UP))
+                .total(total.setScale(2, RoundingMode.HALF_UP))
+                .taxBreakdown(taxBreakdown)
+                .discountBreakdown(discountDetails)
+                .build();
     }
 
     private OrderDTO mapToOrderDTO(Order order) {
@@ -406,9 +451,12 @@ public class OrderService {
                 .subtotal(costInfo.getSubtotal())
                 .taxAmount(costInfo.getTaxAmount())
                 .discountAmount(costInfo.getDiscountAmount())
+                .discountId(order.getDiscountId())
                 .total(costInfo.getTotal())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
+                .taxBreakdown(costInfo.getTaxBreakdown())
+                .discountBreakdown(costInfo.getDiscountBreakdown())
                 .build();
     }
 

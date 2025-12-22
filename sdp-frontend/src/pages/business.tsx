@@ -187,7 +187,9 @@ function CreateDiscountDialog({ onCreated, merchantId }: { onCreated: (discount:
                     <div className="space-y-2">
                         <Label>Type</Label>
                         <Select onValueChange={(v: any) => setType(v)} defaultValue={type}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="bg-black text-white border-gray-600">
+                                <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
                                 <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
@@ -197,7 +199,9 @@ function CreateDiscountDialog({ onCreated, merchantId }: { onCreated: (discount:
                     <div className="space-y-2">
                         <Label>Scope</Label>
                         <Select onValueChange={(v: any) => setScope(v)} defaultValue={scope}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="bg-black text-white border-gray-600">
+                                <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ORDER">Whole Order</SelectItem>
                                 <SelectItem value="PRODUCT">Specific Product</SelectItem>
@@ -212,8 +216,8 @@ function CreateDiscountDialog({ onCreated, merchantId }: { onCreated: (discount:
 }
 
 function MerchantUsersDialog({
-    merchant,
-}: {
+                                 merchant,
+                             }: {
     merchant: Merchant
 }) {
     const [users, setUsers] = useState<User[]>([])
