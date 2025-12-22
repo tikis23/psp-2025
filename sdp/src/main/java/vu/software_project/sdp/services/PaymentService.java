@@ -1,5 +1,6 @@
 package vu.software_project.sdp.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import vu.software_project.sdp.repositories.PaymentRepository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +33,11 @@ public class PaymentService {
     private final GiftCardService giftCardService;
     private final OrderRepository orderRepository;
     private final OrderService orderService;
+    private final AuditService auditService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
-    public CashPaymentResponseDTO createCashPayment(Long orderId, PaymentRequestDTO request) {
+    public CashPaymentResponseDTO createCashPayment(Long orderId, PaymentRequestDTO request, Long userId, Long merchantId) {
         if (request.getAmount() == null || request.getAmount().signum() <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
@@ -71,6 +75,16 @@ public class PaymentService {
 
         closeOrderIfPaid(order, remainingAfter);
 
+        auditService.logAction(
+                userId,
+                "payment.created",
+                "Payment",
+                order.getId(),
+                merchantId,
+                null,
+                buildPaymentAuditData(payment)
+        );
+
         return CashPaymentResponseDTO.builder()
                 .id("pay_" + payment.getId())
                 .orderId(orderId.toString())
@@ -86,7 +100,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public CardPaymentResponseDTO createCardPayment(Long orderId, PaymentRequestDTO request) {
+    public CardPaymentResponseDTO createCardPayment(Long orderId, PaymentRequestDTO request, Long userId, Long merchantId) {
         if (request.getAmount() == null || request.getAmount().signum() <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
@@ -139,6 +153,16 @@ public class PaymentService {
             throw new RuntimeException("Failed to create card payment record");
         }
 
+        auditService.logAction(
+                userId,
+                "payment.created",
+                "Payment",
+                order.getId(),
+                merchantId,
+                null,
+                buildPaymentAuditData(payment)
+        );
+
         return CardPaymentResponseDTO.builder()
             .paymentId(payment.getId().toString())
             .stripeClientSecret(intent.getClientSecret())
@@ -165,12 +189,22 @@ public class PaymentService {
             BigDecimal alreadyPaid = calculatePaidAmount(order.getId());
             BigDecimal remainingAfter = maxZero(total.subtract(alreadyPaid));
 
+            auditService.logAction(
+                    null,
+                    "payment.updated",
+                    "Payment",
+                    order.getId(),
+                    order.getMerchantId(),
+                    null,
+                    buildPaymentAuditData(payment)
+            );
+
             closeOrderIfPaid(order, remainingAfter);
         }
     }
 
     @Transactional
-    public void cancelCardPayment(Long paymentId) {
+    public void cancelCardPayment(Long paymentId, Long merchantId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
         
@@ -190,6 +224,16 @@ public class PaymentService {
             System.err.println("Failed to cancel Stripe Payment Intent: " + e.getMessage());
             throw new RuntimeException("Failed to cancel Stripe Payment.");
         }
+
+        auditService.logAction(
+                null,
+                "payment.canceled",
+                "Payment",
+                payment.getOrderId(),
+                merchantId,
+                null,
+                buildPaymentAuditData(payment)
+        );
 
         payment.setStatus(Status.CANCELED);
         payment.setUpdatedAt(OffsetDateTime.now());
@@ -285,6 +329,21 @@ public class PaymentService {
         if (remainingAfter.signum() == 0 && order.getStatus() == Order.Status.OPEN) {
             order.setStatus(Order.Status.PAID);
             orderRepository.save(order);
+
+            auditService.logAction(
+                    null,
+                    "order.closed",
+                    "Order",
+                    order.getId(),
+                    order.getMerchantId(),
+                    null,
+                    null
+            );
         }
     }
+
+    private Map buildPaymentAuditData(Payment payment) {
+        return objectMapper.convertValue(payment, Map.class);
+    }
+
 }
