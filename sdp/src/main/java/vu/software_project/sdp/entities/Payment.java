@@ -22,6 +22,9 @@ public class Payment {
     @Column(nullable = false)
     private Long orderId;
 
+    @Column(nullable = true)
+    private String stripePaymentId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentType paymentType;

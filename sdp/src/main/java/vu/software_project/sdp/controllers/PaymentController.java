@@ -21,12 +21,15 @@ public class PaymentController {
             @RequestBody @NotNull PaymentRequestDTO request) {
         String type = request.getPaymentType();
         if (type == null) {
-            return ResponseEntity.badRequest().body("payment_type is required (CASH, GIFT_CARD, ...)");
+            return ResponseEntity.badRequest().body("payment_type is required (CASH, GIFT_CARD, CARD)");
         }
 
         return switch (type.toUpperCase()) {
             case "CASH" -> ResponseEntity.status(HttpStatus.CREATED)
                     .body(paymentService.createCashPayment(orderId, request));
+
+            case "CARD" -> ResponseEntity.status(HttpStatus.CREATED)
+                    .body(paymentService.createCardPayment(orderId, request));
 
             case "GIFT_CARD" -> ResponseEntity.status(HttpStatus.CREATED)
                     .body(paymentService.createGiftCardPayment(orderId, request));
@@ -34,5 +37,16 @@ public class PaymentController {
             default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Unsupported payment_type: " + type);
         };
+    }
+
+    @DeleteMapping("/{paymentId}")
+    public ResponseEntity<Void> cancelPayment(@PathVariable Long paymentId) {
+        try {
+            paymentService.cancelCardPayment(paymentId);
+        } catch (Exception e) {
+            System.out.println("Error cancelling payment: " + e.getMessage());
+        }
+        
+        return ResponseEntity.noContent().build();
     }
 }

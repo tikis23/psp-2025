@@ -4,8 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.stripe.model.PaymentIntent;
+import com.stripe.param.PaymentIntentCreateParams;
+
 import vu.software_project.sdp.DTOs.orders.OrderCostInfoDTO;
 import vu.software_project.sdp.DTOs.payments.PaymentRequestDTO;
+import vu.software_project.sdp.DTOs.payments.card.CardPaymentResponseDTO;
 import vu.software_project.sdp.DTOs.payments.cash.CashPaymentResponseDTO;
 import vu.software_project.sdp.DTOs.payments.giftcard.GiftCardPaymentResponseDTO;
 import vu.software_project.sdp.entities.GiftCard;
@@ -79,6 +83,117 @@ public class PaymentService {
                 .tip(payment.getTip())
                 .changeDue(changeDue)
                 .build();
+    }
+
+    @Transactional
+    public CardPaymentResponseDTO createCardPayment(Long orderId, PaymentRequestDTO request) {
+        if (request.getAmount() == null || request.getAmount().signum() <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+
+        Order order = loadOrder(orderId);
+
+        OrderCostInfoDTO costInfo = orderService.calculateOrderCosts(order);
+        BigDecimal total = costInfo.getTotal();
+        BigDecimal alreadyPaid = calculatePaidAmount(orderId);
+        BigDecimal remainingBefore = maxZero(total.subtract(alreadyPaid));
+
+        if (remainingBefore.signum() == 0) {
+            throw new IllegalArgumentException("Order is already fully paid");
+        }
+        
+        BigDecimal amountToPay = request.getAmount().min(remainingBefore);
+        BigDecimal amountWithTips = amountToPay.add(request.getTip() != null ? request.getTip() : BigDecimal.ZERO);
+        BigDecimal amountInCents = amountWithTips.multiply(new BigDecimal("100"));
+        
+        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+            .setAmount(amountInCents.longValue())
+            .setCurrency("usd")
+            .build();
+        
+        PaymentIntent intent;
+        try {
+            intent = PaymentIntent.create(params);
+        } catch (Exception e) {
+            System.err.println("Stripe Payment Intent creation failed: " + e.getMessage());
+            throw new RuntimeException("Failed to create card payment");
+        }
+
+        Payment payment = new Payment();
+        try {
+            OffsetDateTime now = OffsetDateTime.now();
+            
+            payment.setOrderId(orderId);
+            payment.setStripePaymentId(intent.getId());
+            payment.setPaymentType(PaymentType.CARD);
+            payment.setAmount(amountToPay);
+            payment.setCashReceived(BigDecimal.ZERO);
+            payment.setTip(request.getTip() != null ? request.getTip() : BigDecimal.ZERO);
+            payment.setStatus(Status.REQUIRES_ACTION);
+            payment.setCreatedAt(now);
+            payment.setUpdatedAt(now);
+            
+            payment = paymentRepository.save(payment);
+        } catch (Exception e) {
+            System.err.println("Payment record creation failed: " + e.getMessage());
+            throw new RuntimeException("Failed to create card payment record");
+        }
+
+        return CardPaymentResponseDTO.builder()
+            .paymentId(payment.getId().toString())
+            .stripeClientSecret(intent.getClientSecret())
+            .build();
+    }
+
+    @Transactional
+    public void updateCardPaymentStatus(String stripePaymentId, Status newStatus) {
+        Payment payment = paymentRepository.findByStripePaymentId(stripePaymentId);
+        if (payment == null) {
+            throw new IllegalArgumentException("Payment not found for Stripe Payment ID: " + stripePaymentId);
+        }
+
+        payment.setStatus(newStatus);
+        payment.setUpdatedAt(OffsetDateTime.now());
+
+        paymentRepository.save(payment);
+
+        
+        if (newStatus == Status.SUCCEEDED) {
+            Order order = loadOrder(payment.getOrderId());
+            OrderCostInfoDTO costInfo = orderService.calculateOrderCosts(order);
+            BigDecimal total = costInfo.getTotal();
+            BigDecimal alreadyPaid = calculatePaidAmount(order.getId());
+            BigDecimal remainingAfter = maxZero(total.subtract(alreadyPaid));
+
+            closeOrderIfPaid(order, remainingAfter);
+        }
+    }
+
+    @Transactional
+    public void cancelCardPayment(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        
+        if (payment.getPaymentType() != PaymentType.CARD) {
+            throw new IllegalArgumentException("Only card payments can be canceled");
+        }
+
+        String paymentIntentId = payment.getStripePaymentId();
+        if (paymentIntentId == null || paymentIntentId.isBlank()) {
+            throw new IllegalArgumentException("Payment does not have a valid Stripe Payment Intent ID");
+        }
+
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+            intent.cancel();
+        } catch (Exception e) {
+            System.err.println("Failed to cancel Stripe Payment Intent: " + e.getMessage());
+            throw new RuntimeException("Failed to cancel Stripe Payment.");
+        }
+
+        payment.setStatus(Status.CANCELED);
+        payment.setUpdatedAt(OffsetDateTime.now());
+        paymentRepository.save(payment);
     }
 
     @Transactional
