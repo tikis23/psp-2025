@@ -3,6 +3,7 @@ package vu.software_project.sdp.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType; // Import needed for TEXT_PLAIN
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vu.software_project.sdp.DTOs.reservations.ReservationCreateRequestDto;
@@ -20,17 +21,29 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    public ResponseEntity<ReservationResponseDto> createReservation(
+    public ResponseEntity<?> createReservation(
             @RequestBody ReservationCreateRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(reservationService.createReservation(request, request.getMerchantId()));
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(reservationService.createReservation(request, request.getMerchantId()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(ex.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ReservationResponseDto> updateReservation(
+    public ResponseEntity<?> updateReservation(
             @PathVariable Long id,
             @RequestBody ReservationCreateRequestDto request) {
-        return ResponseEntity.ok(reservationService.updateReservation(id, request, request.getMerchantId()));
+        try {
+            return ResponseEntity.ok(reservationService.updateReservation(id, request, request.getMerchantId()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(ex.getMessage());
+        }
     }
 
     @GetMapping
@@ -42,10 +55,16 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelReservation(
+    public ResponseEntity<?> cancelReservation(
             @PathVariable Long id,
             @RequestParam Long merchantId) {
-        reservationService.cancelReservation(id, merchantId);
-        return ResponseEntity.noContent().build();
+        try {
+            reservationService.cancelReservation(id, merchantId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(ex.getMessage());
+        }
     }
 }

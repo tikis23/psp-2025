@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react"
 import { getAllReservations, createReservation, updateReservation, cancelReservation } from "@/services/reservationService"
 import { getAllItems } from "@/services/itemService"
 import { getEmployeesByMerchant } from "@/services/userService"
+import { ApiError } from "@/services/fetchClient"
 import type {Item, Reservation, ReservationCreateRequest, User} from "@/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -97,9 +98,19 @@ export default function ReservationsPage() {
 
             resetForm()
             loadData()
-        } catch (error) {
-            console.error(error)
-            toast.error("Operation failed")
+        } catch (error: any) {
+            console.error("Reservation Error:", error)
+            let errorMessage = "Operation failed";
+
+            if (error instanceof ApiError && error.data) {
+                if (typeof error.data === 'string') {
+                    errorMessage = error.data;
+                } else {
+                    errorMessage = JSON.stringify(error.data);
+                }
+            }
+
+            toast.error(errorMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -136,9 +147,13 @@ export default function ReservationsPage() {
             await cancelReservation(id, user.merchantId)
             toast.success("Cancelled")
             loadData()
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast.error("Cancel failed")
+            let errorMessage = "Cancel failed";
+            if (error instanceof ApiError && error.data) {
+                errorMessage = typeof error.data === 'string' ? error.data : JSON.stringify(error.data);
+            }
+            toast.error(errorMessage)
         }
     }
 
