@@ -88,7 +88,7 @@ export const createCardPayment = (
     amount: number,
     tip?: number
 ): Promise<CardPaymentResponse> => {
-    return fetchApi<CardPaymentResponse>(`/api/orders/${orderId}/payments`, {
+    return fetchApi<CardPaymentResponse>(`/api/orders/${orderId}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -103,7 +103,7 @@ export const cancelCardPayment = (
     orderId: string,
     paymentId: string
 ): Promise<void> => {
-    return fetchApi<void>(`/api/orders/${orderId}/payments/${paymentId}`, {
+    return fetchApi<void>(`/api/orders/${orderId}/pay/${paymentId}`, {
         method: "DELETE",
     })
 }
