@@ -33,9 +33,11 @@ public class ReservationService {
             throw new IllegalArgumentException("Cannot book appointments in the past");
         }
 
-        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeAndStatus(
+        LocalDateTime requestedTime = request.getAppointmentTime();
+        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeBetweenAndStatus(
                 request.getEmployeeId(),
-                request.getAppointmentTime(),
+                requestedTime.minusMinutes(59),
+                requestedTime.plusMinutes(59),
                 Status.CONFIRMED
         );
         if (!conflicts.isEmpty()) {
@@ -70,9 +72,11 @@ public class ReservationService {
             throw new IllegalArgumentException("Only confirmed reservations can be modified");
         }
 
-        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeAndStatus(
+        LocalDateTime requestedTime = request.getAppointmentTime();
+        List<Reservation> conflicts = reservationRepository.findByEmployeeIdAndAppointmentTimeBetweenAndStatus(
                 request.getEmployeeId(),
-                request.getAppointmentTime(),
+                requestedTime.minusMinutes(59),
+                requestedTime.plusMinutes(59),
                 Status.CONFIRMED
         );
 

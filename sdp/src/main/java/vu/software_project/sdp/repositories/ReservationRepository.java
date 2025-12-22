@@ -22,4 +22,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             LocalDateTime appointmentTime,
             Status status
     );
+
+    List<Reservation> findByEmployeeIdAndAppointmentTimeBetweenAndStatus(
+            Long employeeId,
+            LocalDateTime start,
+            LocalDateTime end,
+            Status status
+    );
 }
