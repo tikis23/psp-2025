@@ -11,10 +11,16 @@ type ReceiptOverlayProps = {
 
 const ReceiptOverlay: React.FC<ReceiptOverlayProps> = ({ order, onClose }) => {
     const totals = useMemo(() => {
+        const items = order.items ?? []
+
+        const itemDiscountsTotal = items.reduce((sum, item) => sum + Number(item.appliedDiscountAmount ?? 0), 0)
+
         const subtotal = Number(order.subtotal ?? 0)
+        const orderLevelDiscount = Number(order.discountAmount ?? 0)
+        const totalDiscounts = itemDiscountsTotal + orderLevelDiscount
         const tax = Number(order.taxAmount ?? 0)
-        const discount = Number(order.discountAmount ?? 0)
-        const total = Number(order.total ?? subtotal + tax - discount)
+
+        const total = Number(order.total ?? subtotal + tax - orderLevelDiscount)
 
         const payments = order.payments ?? []
 
@@ -35,7 +41,19 @@ const ReceiptOverlay: React.FC<ReceiptOverlayProps> = ({ order, onClose }) => {
 
         const remaining = Math.max(0, total - paidApplied)
 
-        return { subtotal, tax, discount, total, tipTotal, paidApplied, cashReceivedTotal, changeTotal, remaining }
+        return {
+            subtotal,
+            tax,
+            orderLevelDiscount,
+            itemDiscountsTotal,
+            totalDiscounts,
+            total,
+            tipTotal,
+            paidApplied,
+            cashReceivedTotal,
+            changeTotal,
+            remaining
+        }
     }, [order])
 
     const createdAt = useMemo(() => {
@@ -78,24 +96,51 @@ const ReceiptOverlay: React.FC<ReceiptOverlayProps> = ({ order, onClose }) => {
                             {(order.items ?? []).map((it) => {
                                 const qty = Number(it.quantity ?? 0)
                                 const price = Number(it.price ?? 0)
-                                const line = qty * price
+                                const itemDiscount = Number(it.appliedDiscountAmount ?? 0)
+                                const taxRate = Number(it.appliedTaxRate ?? 0)
+
+                                let basePrice = price
+                                if (it.variations) {
+                                    it.variations.forEach(v => basePrice += Number(v.priceOffset ?? 0))
+                                }
+                                const lineGross = qty * basePrice
+                                const lineTaxable = lineGross - itemDiscount
+                                const lineTaxAmount = lineTaxable * taxRate
+
                                 return (
-                                    <div key={it.id} className="px-5 py-4 flex items-start justify-between border-b last:border-b-0">
-                                        <div>
-                                            <div className="text-lg font-medium">{it.name}</div>
-                                            <div className="text-base text-gray-500">
-                                                {qty} × {price.toFixed(2)}
-                                            </div>
-                                            {(it.variations ?? []).length > 0 && (
+                                    <div key={it.id} className="px-5 py-4 flex flex-col border-b last:border-b-0 space-y-1">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="text-lg font-medium">{it.name}</div>
                                                 <div className="text-base text-gray-500">
-                                                    +{" "}
-                                                    {it.variations
-                                                        .map((v) => `${v.name} (${Number(v.priceOffset ?? 0).toFixed(2)})`)
-                                                        .join(", ")}
+                                                    {qty} × {price.toFixed(2)}
+                                                </div>
+                                                {(it.variations ?? []).length > 0 && (
+                                                    <div className="text-sm text-gray-500">
+                                                        +{" "}
+                                                        {it.variations
+                                                            .map((v) => `${v.name} (${Number(v.priceOffset ?? 0).toFixed(2)})`)
+                                                            .join(", ")}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="text-lg font-semibold">{lineGross.toFixed(2)}</div>
+                                        </div>
+
+                                        <div className="text-sm text-gray-600 space-y-0.5 pl-2 border-l-2 border-gray-100">
+                                            {itemDiscount > 0 && (
+                                                <div className="flex justify-between text-green-600">
+                                                    <span>Discount</span>
+                                                    <span>-{itemDiscount.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            {taxRate > 0 && (
+                                                <div className="flex justify-between text-gray-500">
+                                                    <span>Tax ({(taxRate * 100).toFixed(1)}%)</span>
+                                                    <span>{lineTaxAmount.toFixed(2)}</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="text-lg font-semibold">{line.toFixed(2)}</div>
                                     </div>
                                 )
                             })}
@@ -125,16 +170,34 @@ const ReceiptOverlay: React.FC<ReceiptOverlayProps> = ({ order, onClose }) => {
 
                 <div className="rounded-md border p-6 space-y-3">
                     <div className="flex justify-between text-base">
-                        <span>Subtotal</span>
+                        <span>Subtotal (Net)</span>
                         <span>{totals.subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-base">
-                        <span>Tax</span>
+
+                    {totals.itemDiscountsTotal > 0 && (
+                        <div className="flex justify-between text-base text-green-600">
+                            <span>Item Discounts</span>
+                            <span>-{totals.itemDiscountsTotal.toFixed(2)}</span>
+                        </div>
+                    )}
+
+                    {totals.orderLevelDiscount > 0 && (
+                        <div className="flex justify-between text-base text-green-600">
+                            <span>Order Discount</span>
+                            <span>-{totals.orderLevelDiscount.toFixed(2)}</span>
+                        </div>
+                    )}
+
+                    {(totals.itemDiscountsTotal > 0 || totals.orderLevelDiscount > 0) && (
+                        <div className="flex justify-between text-base font-medium text-green-700 pt-2">
+                            <span>Total Discounts</span>
+                            <span>-{totals.totalDiscounts.toFixed(2)}</span>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between text-base pt-2">
+                        <span>Total Tax</span>
                         <span>{totals.tax.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-base">
-                        <span>Discount</span>
-                        <span>-{totals.discount.toFixed(2)}</span>
                     </div>
 
                     <div className="border-t pt-4 flex justify-between text-2xl font-semibold">

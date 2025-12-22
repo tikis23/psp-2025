@@ -15,4 +15,5 @@ public class OrderItemDTO {
     private BigDecimal price;
     private List<OrderItemVariationDTO> variations;
     private BigDecimal appliedDiscountAmount;
+    private BigDecimal appliedTaxRate;
 }

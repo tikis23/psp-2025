@@ -22,6 +22,7 @@ export interface OrderItem {
     variations: OrderItemVariation[];
     discountId?: string;
     appliedDiscountAmount?: number;
+    appliedTaxRate?: number;
 }
 
 export interface OrderPaymentInfo {
