@@ -134,27 +134,24 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                                                         ))}
                                                     </ul>
                                                 )}
-
-                                                {/* Item Discount Row with small 'x' */}
                                                 {item.appliedDiscountAmount && item.appliedDiscountAmount > 0 ? (
-                                                    <div className="flex items-center gap-1 mt-1">
+                                                    <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-xs text-green-600 font-semibold">
                                                             Discount: -${item.appliedDiscountAmount.toFixed(2)}
                                                         </span>
-                                                        <button
+                                                        <span
                                                             onClick={() => onApplyItemDiscount && onApplyItemDiscount(item.id, "")}
-                                                            className="text-gray-400 hover:text-red-500 text-[10px] ml-1 font-bold"
+                                                            className="cursor-pointer text-red-500 hover:text-red-700 text-xs"
                                                             title="Remove Discount"
                                                         >
-                                                            ×
-                                                        </button>
+                                                            × Remove
+                                                        </span>
                                                     </div>
                                                 ) : null}
                                             </div>
 
                                             <div className="text-right">
                                                 <div>${lineTotal.toFixed(2)}</div>
-                                                {/* UNDO: Restored original 'Remove' styling */}
                                                 {onItemRemove && (
                                                     <span
                                                         onClick={() => removeItem(item.id)}
@@ -190,25 +187,44 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
                     <span>Subtotal</span>
                     <span>${order.subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span>${order.taxAmount.toFixed(2)}</span>
-                </div>
 
-                {/* Order Discount Row with small 'x' */}
-                {order.discountAmount > 0 && (
-                    <div className="flex justify-between items-center text-green-600 font-semibold">
-                        <span>Order Discount</span>
-                        <div className="flex items-center gap-1">
-                            <span>-${order.discountAmount.toFixed(2)}</span>
-                            <button
-                                onClick={() => onApplyOrderDiscount && onApplyOrderDiscount("")}
-                                className="text-gray-400 hover:text-red-500 text-xs font-bold"
-                                title="Remove Discount"
-                            >
-                                ×
-                            </button>
+                <div className="flex flex-col gap-1">
+                    <div className="flex justify-between">
+                        <span>Tax</span>
+                        <span>${order.taxAmount.toFixed(2)}</span>
+                    </div>
+                    {order.taxBreakdown?.map((tax, i) => (
+                        <div key={i} className="flex justify-between text-xs text-muted-foreground pl-2 italic">
+                            <span>{tax}</span>
                         </div>
+                    ))}
+                </div>
+                {order.discountAmount > 0 && (
+                    <div className="flex flex-col gap-1">
+                        <div className="flex justify-between items-center text-green-600 font-semibold">
+                            <span>Total Discount</span>
+                            <div className="flex items-center gap-2">
+                                <span>-${order.discountAmount.toFixed(2)}</span>
+                                {order.discountId && (
+                                    <span
+                                        onClick={() => onApplyOrderDiscount && onApplyOrderDiscount("")}
+                                        className="cursor-pointer text-red-500 hover:text-red-700 text-xs font-normal"
+                                        title="Remove Order Discount"
+                                    >
+                                        × Remove
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        {order.discountBreakdown && order.discountBreakdown.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                                {order.discountBreakdown.map((d, i) => (
+                                    <div key={i} className="flex justify-between text-xs text-green-600 pl-2 italic">
+                                        <span>{d}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
