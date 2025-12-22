@@ -3,23 +3,32 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { createCashPayment, createGiftCardPayment } from "@/services/paymentService"
+import { createCardPayment, createCashPayment, createGiftCardPayment } from "@/services/paymentService"
 import type { Order } from "@/services/orderService"
+import { cancelCardPayment as cancelRealCardPayment } from "@/services/paymentService"
+
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
 
 export interface PaymentOverlayProps {
     order: Order
     onPaid?: (data?: { changeDue?: number }) => void
+    onProgress?: () => void
 }
 
 type PaymentMethod = "CASH" | "CARD" | "GIFT_CARD"
 
-const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
+const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid, onProgress }) => {
     const [method, setMethod] = useState<PaymentMethod>("CASH")
 
     const [amount, setAmount] = useState("")
     const [tip, setTip] = useState("")
     const [giftCardCode, setGiftCardCode] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const stripe = useStripe()
+    const elements = useElements()
+    const [clientSecret, setClientSecret] = useState("");
+    const [paymentId, setPaymentId] = useState("");
 
     const validateAmount = () => {
         const numericAmount = Number(amount)
@@ -34,16 +43,11 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
 
     const resetIrrelevantFields = (next: PaymentMethod) => {
         if (next !== "GIFT_CARD") setGiftCardCode("")
-        if (next === "CASH") setTip("")
     }
 
     const selectMethod = (next: PaymentMethod) => {
         setMethod(next)
         resetIrrelevantFields(next)
-
-        if (next === "CARD") {
-            toast.info("Card payment flow (not implemented yet)")
-        }
     }
 
     const handleCash = async () => {
@@ -107,10 +111,89 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
         }
     }
 
+    const startCardPayment = async () => {
+        const numericAmount = validateAmount()
+        if (numericAmount === null) return
+
+        try {
+            setIsSubmitting(true)
+
+            const res = await createCardPayment(order.id.toString(), numericAmount, numericTip)
+
+            setClientSecret(res.stripeClientSecret);
+            setPaymentId(res.paymentId);
+
+            setAmount("")
+            setTip("")
+            onProgress?.()
+        } catch (err: any) {
+            setClientSecret("")
+            setPaymentId("")
+            console.error(err)
+            toast.error("Failed to create card payment", {
+                description: err?.data || err?.message || "Unknown error",
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const finishCardPayment = async () => {
+        if (!stripe || !elements) return
+
+        setIsSubmitting(true)
+
+        const result = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+            card: elements.getElement(CardElement)!,
+            },
+        })
+
+        if (result.error) {
+            toast.error("Card payment failed", {
+            description: result.error.message,
+            })
+        } else if (result.paymentIntent?.status === "succeeded") {
+            toast.success("Card payment successful")
+            setClientSecret("")
+            setPaymentId("")
+
+            onPaid?.({ changeDue: 0 })
+        }
+
+        setTimeout(() => {
+            onProgress?.()
+        }, 2000)
+        setIsSubmitting(false)
+    }
+
+    const cancelCardPayment = async () => {
+        
+        setIsSubmitting(true)
+
+        try {
+            await cancelRealCardPayment(order.id.toString(), paymentId);
+
+            setClientSecret("");
+            setPaymentId("");
+        } catch (err) {
+            console.error("Failed to cancel card payment:", err);
+            toast.error("Failed to cancel card payment.");
+        }
+        
+        setTimeout(() => {
+            onProgress?.()
+        }, 2000)
+        setIsSubmitting(false)
+    }
+
     const primaryAction = () => {
         if (method === "CASH") return handleCash()
         if (method === "GIFT_CARD") return handleGiftCard()
-        toast.info("Card payment flow (not implemented yet)")
+        if (method === "CARD") {
+            if (clientSecret === "") return startCardPayment()
+            else return finishCardPayment()
+        }
     }
 
     return (
@@ -130,7 +213,7 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                             variant={method === "CASH" ? "default" : "outline"}
                             className="h-20 flex flex-col justify-center"
                             onClick={() => selectMethod("CASH")}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || clientSecret !== ""}
                         >
                             <span className="font-semibold text-white">Pay by cash</span>
                             <span className="text-xs text-gray-500">Take cash &amp; give change</span>
@@ -140,7 +223,7 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                             variant={method === "CARD" ? "default" : "outline"}
                             className="h-20 flex flex-col justify-center"
                             onClick={() => selectMethod("CARD")}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || clientSecret !== ""}
                         >
                             <span className="font-semibold text-white">Pay by card</span>
                             <span className="text-xs text-gray-500">Terminal / online card</span>
@@ -150,7 +233,7 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                             variant={method === "GIFT_CARD" ? "default" : "outline"}
                             className="h-20 flex flex-col justify-center"
                             onClick={() => selectMethod("GIFT_CARD")}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || clientSecret !== ""}
                         >
                             <span className="font-semibold text-white">Pay by gift card</span>
                             <span className="text-xs text-gray-500">Redeem gift card balance</span>
@@ -172,6 +255,20 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                             </div>
                         )}
 
+                        {method === "CARD" && (
+                            <div className="space-y-1 sm:col-span-2">
+                                <label className="text-sm font-medium">Amount to pay</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="e.g. 25.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    disabled={isSubmitting || clientSecret !== ""}
+                                />
+                            </div>
+                        )}
+
                         {method === "GIFT_CARD" && (
                             <div className="space-y-1 sm:col-span-2">
                                 <label className="text-sm font-medium">Gift card code</label>
@@ -184,34 +281,50 @@ const PaymentOverlay: React.FC<PaymentOverlayProps> = ({ order, onPaid }) => {
                             </div>
                         )}
 
-                        {method !== "CARD" && (
-                            <div className="space-y-1 sm:col-span-2">
-                                <label className="text-sm font-medium">Tip</label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="e.g. 5.00"
-                                    value={tip}
-                                    onChange={(e) => setTip(e.target.value)}
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                        )}
+                        <div className="space-y-1 sm:col-span-2">
+                            <label className="text-sm font-medium">Tip</label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g. 5.00"
+                                value={tip}
+                                onChange={(e) => setTip(e.target.value)}
+                                disabled={isSubmitting || clientSecret !== ""}
+                            />
+                        </div>
                     </div>
+
+                    {
+                        clientSecret !== "" && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Card details</label>
+
+                                <div className="rounded border p-3 min-w-[300px]">
+                                    <CardElement
+                                        options={{
+                                        hidePostalCode: true,
+                                        }}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                        )
+                    }
+
 
                     <div className="flex justify-end text-white">
-                        <Button onClick={primaryAction} disabled={isSubmitting || method === "CARD"}>
+                        { clientSecret !== "" && (
+                            <Button onClick={cancelCardPayment} disabled={isSubmitting}>
+                                Cancel Card payment
+                            </Button>
+                        )}
+                        <Button onClick={primaryAction} disabled={isSubmitting || !stripe}>
                             {method === "CASH" && "Take Cash payment"}
                             {method === "GIFT_CARD" && "Take Gift Card payment"}
-                            {method === "CARD" && "Take Card payment"}
+                            {method === "CARD" && clientSecret === "" && "Take Card payment"}
+                            {method === "CARD" && clientSecret !== "" && "Confirm card payment"}
                         </Button>
                     </div>
-
-                    {method === "CARD" && (
-                        <p className="text-xs text-gray-500 text-center">
-                            Card payments aren’t wired up yet. Pick cash or gift card for now.
-                        </p>
-                    )}
                 </CardContent>
             </Card>
         </div>

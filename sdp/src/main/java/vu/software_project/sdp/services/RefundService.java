@@ -3,6 +3,9 @@ package vu.software_project.sdp.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.stripe.param.RefundCreateParams;
+
 import vu.software_project.sdp.DTOs.refunds.*;
 import vu.software_project.sdp.entities.*;
 import vu.software_project.sdp.repositories.*;
@@ -44,7 +47,24 @@ public class RefundService {
             if (payment.getStatus() != Payment.Status.SUCCEEDED) continue;
             if (payment.getPaymentType() == Payment.PaymentType.GIFT_CARD) continue;
 
-            payment.setStatus(Payment.Status.REFUNDED);
+            String refundId = null;
+            if (payment.getPaymentType() == Payment.PaymentType.CARD) {
+                RefundCreateParams params =
+                RefundCreateParams.builder()
+                .setPaymentIntent(payment.getStripePaymentId())
+                .setAmount(payment.getAmount().multiply(BigDecimal.valueOf(100)).longValue())
+                .build();
+                try {
+                    com.stripe.model.Refund stripeRefund = com.stripe.model.Refund.create(params);
+                    refundId = stripeRefund.getId();
+                    payment.setStatus(Payment.Status.REFUNDED);
+                } catch (Exception e) {
+                    System.out.println("Failed to create stripe refund: " + e.getMessage());
+                }
+            } else {
+                payment.setStatus(Payment.Status.REFUNDED);
+            }
+
             payment.setUpdatedAt(OffsetDateTime.now());
             paymentRepository.save(payment);
 
@@ -55,15 +75,11 @@ public class RefundService {
                     .paymentType(payment.getPaymentType().name().toLowerCase())
                     .amount(payment.getAmount())
                     .refundStatus(
-                            payment.getPaymentType() == Payment.PaymentType.CARD
-                                    ? "processing"
-                                    : "completed"
+                            payment.getStatus() == Payment.Status.REFUNDED
+                                    ? "completed"
+                                    : "failed"
                     )
-                    .stripeRefundId(
-                            payment.getPaymentType() == Payment.PaymentType.CARD
-                                    ? "re_mocked"
-                                    : null
-                    )
+                    .stripeRefundId(refundId)
                     .build());
         }
 

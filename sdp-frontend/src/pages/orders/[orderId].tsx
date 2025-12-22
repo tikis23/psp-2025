@@ -20,6 +20,11 @@ import PaymentOverlay from "@/components/orders/paymentOverlay"
 import ReceiptOverlay from "@/components/orders/receiptOverlay"
 import { useAuth } from "@/contexts/auth-context"
 
+import { Elements } from "@stripe/react-stripe-js"
+import { loadStripe } from "@stripe/stripe-js"
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
 const ModifyOrderPage = () => {
     const { orderId } = useParams<{ orderId: string }>()
     const { user } = useAuth()
@@ -139,6 +144,7 @@ const ModifyOrderPage = () => {
                         onClick={() => setShowPaymentOverlay(false)}
                     />
                     <div className="fixed z-50">
+                    <Elements stripe={stripePromise}>
                         <PaymentOverlay
                             order={currentOrder}
                             onPaid={async () => {
@@ -153,7 +159,16 @@ const ModifyOrderPage = () => {
                                     setShowReceiptOverlay(true)
                                 }
                             }}
+                            onProgress={async () => {
+                                try {
+                                    const updated = await getOrder(currentOrder.id)
+                                    setCurrentOrder(updated)
+                                } catch (err) {
+                                    console.error("Failed to refresh order:", err)
+                                }
+                            }}
                         />
+                    </Elements>
                     </div>
                 </div>
             )}

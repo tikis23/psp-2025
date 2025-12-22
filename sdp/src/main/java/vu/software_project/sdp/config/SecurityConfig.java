@@ -58,6 +58,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/items/**").permitAll()
                     .requestMatchers("/api/gift-cards/**").permitAll()
                     .requestMatchers("/api/users/**").permitAll()
+                    // stripe webhooks
+                    .requestMatchers("/api/stripe/webhook").permitAll()
 
                     // Everything else requires authentication
                     .anyRequest().authenticated())
